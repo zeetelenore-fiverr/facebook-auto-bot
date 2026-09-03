@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* Class-based dark mode: toggled by adding/removing `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #faf9fb;
+  --surface: #ffffff;
+  --surface-2: #f3f1f5;
+  --foreground: #17151a;
+  --muted-foreground: #6b7280;
+  --border: #e7e5ea;
+
+  --primary: #e01e4d;
+  --primary-foreground: #ffffff;
+  --primary-hover: #c81842;
+
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --ring: #e01e4d;
+  --radius: 1rem;
+}
+
+.dark {
+  --background: #0b0b0f;
+  --surface: #16161d;
+  --surface-2: #1d1d26;
+  --foreground: #f5f5f7;
+  --muted-foreground: #9aa0ac;
+  --border: #27272f;
+
+  --primary: #ff3d68;
+  --primary-foreground: #0b0b0f;
+  --primary-hover: #ff5c80;
+
+  --accent: #5b8def;
+  --accent-foreground: #0b0b0f;
+
+  --success: #34d399;
+  --success-foreground: #06281c;
+  --warning: #fbbf24;
+  --warning-foreground: #2b1b02;
+  --destructive: #f87171;
+  --destructive-foreground: #2b0a0a;
+
+  --ring: #ff3d68;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-ring: var(--ring);
+  --radius-card: var(--radius);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
