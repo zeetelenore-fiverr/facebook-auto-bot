@@ -38,7 +38,10 @@ put_env() {
   echo "    set $key"
 }
 
-echo "==> Setting production environment variables"
+if [ "${SKIP_ENV:-0}" = "1" ]; then
+  echo "==> Skipping environment variables (SKIP_ENV=1)"
+else
+  echo "==> Setting production environment variables"
 put_env NEXT_PUBLIC_SUPABASE_URL   "${NEXT_PUBLIC_SUPABASE_URL:?}"
 put_env SUPABASE_SERVICE_ROLE_KEY  "${SUPABASE_SERVICE_ROLE_KEY:?}"
 put_env ADMIN_PASSWORD             "$ADMIN_PASSWORD"
@@ -49,6 +52,7 @@ put_env PINTEREST_APP_ID           "${PINTEREST_APP_ID:-not-configured}"
 put_env PINTEREST_APP_SECRET       "${PINTEREST_APP_SECRET:-not-configured}"
 put_env PINTEREST_REDIRECT_URI     "${PINTEREST_REDIRECT_URI:-https://$PROJECT.vercel.app/api/pinterest/oauth/callback}"
 [ -n "${PEXELS_API_KEY:-}" ] && put_env PEXELS_API_KEY "$PEXELS_API_KEY"
+fi
 
 echo "==> Deploying to production"
 $VC deploy --prod --token "$VERCEL_TOKEN"

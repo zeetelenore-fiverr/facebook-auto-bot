@@ -381,6 +381,14 @@ async function oauthCallback(req: Request, url: URL) {
   }
 }
 
+/**
+ * Autopilot tick. Vercel's Hobby plan permits only one cron run per day — a
+ * more frequent schedule in vercel.json is rejected at deploy time — so the
+ * built-in cron fires once at 04:00 UTC (09:00 Asia/Karachi, the first default
+ * posting hour). Every guard in maybeRunAutopilot is idempotent, so the
+ * remaining posting slots can be driven by pointing any free external cron
+ * (cron-job.org, UptimeRobot) at this same path with the CRON_SECRET.
+ */
 async function runCron(req: Request, url: URL) {
   if (env.cronSecret) {
     const auth = req.headers.get("authorization");

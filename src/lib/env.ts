@@ -46,6 +46,15 @@ export const env = {
     return required("PINTEREST_REDIRECT_URI");
   },
 
+  // Free-tier LLM keys. Both are optional: without either one the app falls
+  // back to the keyless Pollinations endpoint, and then to template copy.
+  get groqApiKey() {
+    return optional("GROQ_API_KEY");
+  },
+  get geminiApiKey() {
+    return optional("GEMINI_API_KEY");
+  },
+
   // Free image sources
   get pexelsApiKey() {
     return optional("PEXELS_API_KEY");

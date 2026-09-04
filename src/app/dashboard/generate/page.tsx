@@ -263,6 +263,18 @@ export default function GeneratePage() {
             </div>
 
             <div className="space-y-4">
+              {content.provider === "template" ? (
+                <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  Every free AI writer was unreachable, so this copy came from a
+                  template. Edit it before posting, or add a free GROQ_API_KEY or
+                  GEMINI_API_KEY to restore AI copy.
+                </p>
+              ) : content.provider ? (
+                <p className="text-xs text-muted-foreground">
+                  Copy written by <span className="font-medium capitalize">{content.provider}</span>
+                </p>
+              ) : null}
+
               <div>
                 <label className="text-xs font-semibold text-muted-foreground">Title</label>
                 <input

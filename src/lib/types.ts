@@ -46,10 +46,17 @@ export interface BoardCache {
   fetched_at: string;
 }
 
+/** Which free service actually wrote the copy. "template" means every AI
+ *  provider was unreachable and the deterministic fallback was used. */
+export type ContentProvider = "groq" | "gemini" | "pollinations" | "template";
+
 export interface GeneratedContent {
   title: string;
   description: string;
   hashtags: string[];
+  provider?: ContentProvider;
+  /** First provider failure, surfaced so a degraded draft can explain itself. */
+  providerError?: string;
 }
 
 export const isPinterestConnected = (s: Pick<AppSettings, "pinterest_access_token">) =>
