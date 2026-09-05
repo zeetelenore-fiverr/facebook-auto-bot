@@ -8,7 +8,7 @@ import {
   MagicWand,
   ClockCountdown,
   ListChecks,
-  PushPin,
+  FlagBanner,
   GearSix,
   List,
   X,
@@ -24,7 +24,7 @@ const NAV = [
   { href: "/dashboard/generate", label: "Generate", icon: MagicWand },
   { href: "/dashboard/queue", label: "Queue", icon: ClockCountdown },
   { href: "/dashboard/history", label: "History", icon: ListChecks },
-  { href: "/dashboard/boards", label: "Boards", icon: PushPin },
+  { href: "/dashboard/pages", label: "Pages", icon: FlagBanner },
   { href: "/dashboard/settings", label: "Settings", icon: GearSix },
 ];
 
@@ -33,7 +33,7 @@ const TITLES: Record<string, string> = {
   "/dashboard/generate": "Generate a pin",
   "/dashboard/queue": "Queue",
   "/dashboard/history": "History",
-  "/dashboard/boards": "Boards",
+  "/dashboard/pages": "Pages",
   "/dashboard/settings": "Settings",
 };
 

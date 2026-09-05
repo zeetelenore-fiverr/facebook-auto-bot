@@ -1,0 +1,71 @@
+import { env } from "@/lib/env";
+
+/** Graph API version this app is pinned to. Meta supports each for ~2 years. */
+export const GRAPH_VERSION = "v26.0";
+export const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
+
+/**
+ * Scopes needed to list the Pages this person manages and publish to them.
+ * All three sit at Standard Access, which every app gets automatically — App
+ * Review is only required for Advanced Access, i.e. acting on behalf of people
+ * who have no role on the app. For a single-user tool posting to its owner's
+ * own Page, no review is involved.
+ */
+export const FACEBOOK_SCOPES = [
+  "pages_show_list",
+  "pages_manage_posts",
+  "pages_read_engagement",
+];
+
+export function buildAuthorizeUrl(state: string) {
+  const params = new URLSearchParams({
+    client_id: env.facebookAppId,
+    redirect_uri: env.facebookRedirectUri,
+    response_type: "code",
+    scope: FACEBOOK_SCOPES.join(","),
+    state,
+  });
+  return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
+}
+
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  /** Absent on tokens Meta considers non-expiring. */
+  expires_in?: number;
+}
+
+async function graphGet(path: string, params: Record<string, string>) {
+  const res = await fetch(`${GRAPH_BASE}${path}?${new URLSearchParams(params)}`, {
+    signal: AbortSignal.timeout(20_000),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok || body?.error) {
+    throw new Error(body?.error?.message ?? `Facebook request to ${path} failed (${res.status})`);
+  }
+  return body;
+}
+
+/** Short-lived user token (about 1 hour). */
+export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
+  return graphGet("/oauth/access_token", {
+    client_id: env.facebookAppId,
+    client_secret: env.facebookAppSecret,
+    redirect_uri: env.facebookRedirectUri,
+    code,
+  });
+}
+
+/**
+ * Trades a short-lived user token for a long-lived one (~60 days). This matters
+ * beyond convenience: Page tokens minted from a long-lived user token never
+ * expire, which is what lets the autopilot keep posting unattended.
+ */
+export async function exchangeForLongLivedToken(shortLivedToken: string): Promise<TokenResponse> {
+  return graphGet("/oauth/access_token", {
+    grant_type: "fb_exchange_token",
+    client_id: env.facebookAppId,
+    client_secret: env.facebookAppSecret,
+    fb_exchange_token: shortLivedToken,
+  });
+}

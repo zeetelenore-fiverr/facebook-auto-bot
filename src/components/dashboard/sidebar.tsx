@@ -7,7 +7,7 @@ import {
   MagicWand,
   ClockCountdown,
   ListChecks,
-  PushPin,
+  FlagBanner,
   GearSix,
 } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
@@ -18,7 +18,7 @@ const NAV = [
   { href: "/dashboard/generate", label: "Generate", icon: MagicWand },
   { href: "/dashboard/queue", label: "Queue", icon: ClockCountdown },
   { href: "/dashboard/history", label: "History", icon: ListChecks },
-  { href: "/dashboard/boards", label: "Boards", icon: PushPin },
+  { href: "/dashboard/pages", label: "Pages", icon: FlagBanner },
   { href: "/dashboard/settings", label: "Settings", icon: GearSix },
 ];
 

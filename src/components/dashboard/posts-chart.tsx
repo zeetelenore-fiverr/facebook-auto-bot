@@ -2,7 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-export function PinsChart({ data }: { data: { date: string; label: string; count: number }[] }) {
+export function PostsChart({ data }: { data: { date: string; label: string; count: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>

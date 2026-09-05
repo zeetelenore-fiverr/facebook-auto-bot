@@ -5,26 +5,37 @@ import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/
 import { generateContent } from "@/lib/ai/text";
 import { generateImage } from "@/lib/ai/image";
 import { getTrendingTopics } from "@/lib/trends";
-import { createPinRecord, deletePinRecord, getPin, listDuePins, listPins, updatePinRecord } from "@/lib/db/pins";
+import {
+  createPostRecord,
+  deletePostRecord,
+  getPost,
+  listDuePosts,
+  listPosts,
+  updatePostRecord,
+} from "@/lib/db/posts";
 import { getSettings, updateSettings } from "@/lib/db/settings";
-import { fetchAccount, fetchBoards, PinterestNotConnectedError } from "@/lib/pinterest/client";
-import { buildAuthorizeUrl, exchangeCodeForToken } from "@/lib/pinterest/oauth";
-import { OAUTH_STATE_COOKIE } from "@/lib/pinterest/oauth-state";
-import { publishPinNow } from "@/lib/pinterest/publish";
+import { fetchAccount, fetchPages, FacebookNotConnectedError } from "@/lib/facebook/client";
+import {
+  buildAuthorizeUrl,
+  exchangeCodeForToken,
+  exchangeForLongLivedToken,
+} from "@/lib/facebook/oauth";
+import { OAUTH_STATE_COOKIE } from "@/lib/facebook/oauth-state";
+import { publishPostNow } from "@/lib/facebook/publish";
 import { maybeRunAutopilot } from "@/lib/autopilot";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import type { PinStatus } from "@/lib/types";
+import type { PostStatus } from "@/lib/types";
 
 /**
  * Every API endpoint lives in this one catch-all handler on purpose.
  *
  * Next.js turns each `route.ts` into its own serverless function, and this
- * app's 15 endpoints put the deployment over Vercel's per-deployment
- * function limit on the Hobby plan — the build succeeded every time and
- * then died at "Deploying outputs" with no log line explaining why.
- * Collapsing them into one dispatcher takes the deployment from ~16
- * functions to 2. The endpoint URLs and behaviour are unchanged; only the
- * file layout moved, and all real logic still lives in `src/lib/*`.
+ * app's endpoints put the deployment over Vercel's per-deployment function
+ * limit on the Hobby plan — the build succeeded every time and then died at
+ * "Deploying outputs" with no log line explaining why. Collapsing them into one
+ * dispatcher takes the deployment from ~16 functions to 2. The endpoint URLs
+ * and behaviour are unchanged; only the file layout moved, and all real logic
+ * still lives in `src/lib/*`.
  */
 
 export const maxDuration = 60;
@@ -48,6 +59,17 @@ async function safely(handler: () => Promise<Response>): Promise<Response> {
   }
 }
 
+/** Tokens must never reach the browser, so they are stripped in one place. */
+function publicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
+  const { facebook_user_token, default_page_token, ...safe } = settings;
+  return {
+    ...safe,
+    facebook_connected: Boolean(facebook_user_token),
+    facebook_page_ready: Boolean(default_page_token),
+    facebook_configured: env.facebookConfigured,
+  };
+}
+
 /* ------------------------------------------------------------------ GET */
 
 export async function GET(req: Request, ctx: Ctx) {
@@ -61,33 +83,27 @@ export async function GET(req: Request, ctx: Ctx) {
     }
 
     if (route === "settings") {
-      const settings = await getSettings();
-      const { pinterest_access_token, pinterest_refresh_token, ...safe } = settings;
-      void pinterest_access_token;
-      void pinterest_refresh_token;
-      return json({
-        ...safe,
-        pinterest_connected: Boolean(settings.pinterest_access_token),
-        pinterest_configured: env.pinterestConfigured,
-      });
+      return json(publicSettings(await getSettings()));
     }
 
-    if (route === "pins") {
+    if (route === "posts") {
       const status = url.searchParams.get("status");
-      const pins = await listPins({ status: status ? (status.split(",") as PinStatus[]) : undefined });
-      return json({ pins });
+      const posts = await listPosts({
+        status: status ? (status.split(",") as PostStatus[]) : undefined,
+      });
+      return json({ posts });
     }
 
-    if (route === "pinterest/boards") {
-      return getBoards(url.searchParams.get("refresh") === "1");
+    if (route === "facebook/pages") {
+      return getPages(url.searchParams.get("refresh") === "1");
     }
 
-    if (route === "pinterest/oauth/start") {
-      if (!env.pinterestConfigured) {
+    if (route === "facebook/oauth/start") {
+      if (!env.facebookConfigured) {
         return redirectToSettings(
           url.origin,
           "error",
-          "This deployment has no Pinterest app credentials yet. Add PINTEREST_APP_ID and PINTEREST_APP_SECRET, then try connecting again."
+          "This deployment has no Meta app credentials yet. Add FACEBOOK_APP_ID and FACEBOOK_APP_SECRET, then try connecting again."
         );
       }
 
@@ -103,7 +119,7 @@ export async function GET(req: Request, ctx: Ctx) {
       return res;
     }
 
-    if (route === "pinterest/oauth/callback") {
+    if (route === "facebook/oauth/callback") {
       return oauthCallback(req, url);
     }
 
@@ -126,21 +142,21 @@ const ImageBody = z.object({
   source: z.enum(["ai", "stock", "mixed"]),
 });
 
-const CreatePinBody = z.object({
+const CreatePostBody = z.object({
   topic: z.string().min(1).max(200),
-  title: z.string().min(1).max(100),
+  title: z.string().min(1).max(120),
   description: z.string().min(1).max(500),
   hashtags: z.array(z.string()).max(15).default([]),
   imageUrl: z.string().url(),
   imageSource: z.enum(["ai", "stock"]),
-  destinationUrl: z.string().url().optional().or(z.literal("")),
-  boardId: z.string().min(1),
-  boardName: z.string().min(1),
+  linkUrl: z.string().url().optional().or(z.literal("")),
+  pageId: z.string().min(1),
+  pageName: z.string().min(1),
   action: z.enum(["draft", "schedule", "post_now"]),
   scheduledAt: z.string().datetime().optional(),
 });
 
-const DefaultBoardBody = z.object({ boardId: z.string().min(1), boardName: z.string().min(1) });
+const DefaultPageBody = z.object({ pageId: z.string().min(1) });
 
 export async function POST(req: Request, ctx: Ctx) {
   const { path } = await ctx.params;
@@ -179,65 +195,77 @@ export async function POST(req: Request, ctx: Ctx) {
       }
     }
 
-    if (route === "pins") {
-      const parsed = CreatePinBody.safeParse(await req.json().catch(() => null));
+    if (route === "posts") {
+      const parsed = CreatePostBody.safeParse(await req.json().catch(() => null));
       if (!parsed.success) {
-        return json({ error: parsed.error.issues[0]?.message ?? "Invalid pin." }, 400);
+        return json({ error: parsed.error.issues[0]?.message ?? "Invalid post." }, 400);
       }
       const b = parsed.data;
       if (b.action === "schedule" && !b.scheduledAt) {
-        return json({ error: "scheduledAt is required to schedule a pin." }, 400);
+        return json({ error: "scheduledAt is required to schedule a post." }, 400);
       }
 
-      const pin = await createPinRecord({
+      const post = await createPostRecord({
         topic: b.topic,
         title: b.title,
         description: b.description,
         hashtags: b.hashtags,
         image_url: b.imageUrl,
         image_source: b.imageSource,
-        destination_url: b.destinationUrl || null,
-        board_id: b.boardId,
-        board_name: b.boardName,
+        link_url: b.linkUrl || null,
+        page_id: b.pageId,
+        page_name: b.pageName,
         scheduled_at: b.action === "schedule" ? b.scheduledAt! : null,
         status: b.action === "schedule" ? "scheduled" : "draft",
       });
 
       if (b.action === "post_now") {
-        return json({ pin: await publishPinNow(pin.id) });
+        return json({ post: await publishPostNow(post.id) });
       }
-      return json({ pin });
+      return json({ post });
     }
 
-    // pins/<id>/post-now
-    if (path.length === 3 && path[0] === "pins" && path[2] === "post-now") {
+    // posts/<id>/post-now
+    if (path.length === 3 && path[0] === "posts" && path[2] === "post-now") {
       try {
-        return json({ pin: await publishPinNow(path[1]) });
+        return json({ post: await publishPostNow(path[1]) });
       } catch (err) {
-        return json({ error: err instanceof Error ? err.message : "Failed to post pin." }, 502);
+        return json({ error: err instanceof Error ? err.message : "Failed to publish." }, 502);
       }
     }
 
-    if (route === "pinterest/default-board") {
-      const parsed = DefaultBoardBody.safeParse(await req.json().catch(() => null));
-      if (!parsed.success) return json({ error: "boardId and boardName are required." }, 400);
-      await updateSettings({
-        default_board_id: parsed.data.boardId,
-        default_board_name: parsed.data.boardName,
-      });
-      return json({ ok: true });
+    if (route === "facebook/default-page") {
+      const parsed = DefaultPageBody.safeParse(await req.json().catch(() => null));
+      if (!parsed.success) return json({ error: "pageId is required." }, 400);
+
+      // The Page token is fetched fresh rather than taken from the client, so
+      // a token never has to travel to the browser and back.
+      try {
+        const page = (await fetchPages()).find((p) => p.id === parsed.data.pageId);
+        if (!page) return json({ error: "That Page is not available on this account." }, 404);
+
+        await updateSettings({
+          default_page_id: page.id,
+          default_page_name: page.name,
+          default_page_token: page.access_token,
+        });
+        return json({ ok: true, pageName: page.name });
+      } catch (err) {
+        if (err instanceof FacebookNotConnectedError) return json({ error: err.message }, 409);
+        throw err;
+      }
     }
 
-    if (route === "pinterest/disconnect") {
+    if (route === "facebook/disconnect") {
       await updateSettings({
-        pinterest_access_token: null,
-        pinterest_refresh_token: null,
-        pinterest_token_expires_at: null,
-        pinterest_username: null,
-        default_board_id: null,
-        default_board_name: null,
+        facebook_user_token: null,
+        facebook_token_expires_at: null,
+        facebook_user_name: null,
+        default_page_id: null,
+        default_page_name: null,
+        default_page_token: null,
       });
-      await supabaseAdmin().from("boards_cache").delete().neq("board_id", "");
+      await supabaseAdmin().from("pages_cache").delete().neq("page_id", "");
       return json({ ok: true });
     }
 
@@ -256,13 +284,13 @@ const SettingsBody = z.object({
   timezone: z.string().min(1).max(64).optional(),
 });
 
-const UpdatePinBody = z.object({
-  title: z.string().min(1).max(100).optional(),
+const UpdatePostBody = z.object({
+  title: z.string().min(1).max(120).optional(),
   description: z.string().min(1).max(500).optional(),
   hashtags: z.array(z.string()).max(15).optional(),
-  destinationUrl: z.string().url().optional().or(z.literal("")),
-  boardId: z.string().min(1).optional(),
-  boardName: z.string().min(1).optional(),
+  linkUrl: z.string().url().optional().or(z.literal("")),
+  pageId: z.string().min(1).optional(),
+  pageName: z.string().min(1).optional(),
   scheduledAt: z.string().datetime().nullable().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
 });
@@ -275,38 +303,34 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (route === "settings") {
       const parsed = SettingsBody.safeParse(await req.json().catch(() => null));
       if (!parsed.success) return json({ error: "Invalid settings payload." }, 400);
-      const updated = await updateSettings(parsed.data);
-      const { pinterest_access_token, pinterest_refresh_token, ...safe } = updated;
-      void pinterest_access_token;
-      void pinterest_refresh_token;
-      return json(safe);
+      return json(publicSettings(await updateSettings(parsed.data)));
     }
 
-    // pins/<id>
-    if (path.length === 2 && path[0] === "pins") {
+    // posts/<id>
+    if (path.length === 2 && path[0] === "posts") {
       const id = path[1];
-      const existing = await getPin(id);
-      if (!existing) return json({ error: "Pin not found." }, 404);
+      const existing = await getPost(id);
+      if (!existing) return json({ error: "Post not found." }, 404);
       if (existing.status === "posted") {
-        return json({ error: "A posted pin can no longer be edited." }, 409);
+        return json({ error: "A published post can no longer be edited here." }, 409);
       }
 
-      const parsed = UpdatePinBody.safeParse(await req.json().catch(() => null));
+      const parsed = UpdatePostBody.safeParse(await req.json().catch(() => null));
       if (!parsed.success) return json({ error: "Invalid update payload." }, 400);
       const b = parsed.data;
 
-      const updated = await updatePinRecord(id, {
+      const updated = await updatePostRecord(id, {
         ...(b.title !== undefined && { title: b.title }),
         ...(b.description !== undefined && { description: b.description }),
         ...(b.hashtags !== undefined && { hashtags: b.hashtags }),
-        ...(b.destinationUrl !== undefined && { destination_url: b.destinationUrl || null }),
-        ...(b.boardId !== undefined && { board_id: b.boardId }),
-        ...(b.boardName !== undefined && { board_name: b.boardName }),
+        ...(b.linkUrl !== undefined && { link_url: b.linkUrl || null }),
+        ...(b.pageId !== undefined && { page_id: b.pageId }),
+        ...(b.pageName !== undefined && { page_name: b.pageName }),
         ...(b.scheduledAt !== undefined && { scheduled_at: b.scheduledAt }),
         ...(b.status !== undefined && { status: b.status }),
       });
 
-      return json({ pin: updated });
+      return json({ post: updated });
     }
 
     return notFound();
@@ -319,8 +343,8 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const { path } = await ctx.params;
 
   return safely(async () => {
-    if (path.length === 2 && path[0] === "pins") {
-      await deletePinRecord(path[1]);
+    if (path.length === 2 && path[0] === "posts") {
+      await deletePostRecord(path[1]);
       return json({ ok: true });
     }
     return notFound();
@@ -329,25 +353,25 @@ export async function DELETE(_req: Request, ctx: Ctx) {
 
 /* ------------------------------------------------------------- handlers */
 
-async function getBoards(refresh: boolean) {
+async function getPages(refresh: boolean) {
   const db = supabaseAdmin();
   try {
     if (refresh) {
-      const boards = await fetchBoards();
-      if (boards.length > 0) {
-        await db.from("boards_cache").delete().neq("board_id", "");
+      const pages = await fetchPages();
+      if (pages.length > 0) {
+        await db.from("pages_cache").delete().neq("page_id", "");
         await db
-          .from("boards_cache")
-          .insert(boards.map((b) => ({ board_id: b.id, name: b.name, privacy: b.privacy })));
+          .from("pages_cache")
+          .insert(pages.map((p) => ({ page_id: p.id, name: p.name, category: p.category })));
       }
     }
 
-    const { data: cached } = await db.from("boards_cache").select("*").order("name");
+    const { data: cached } = await db.from("pages_cache").select("*").order("name");
     const settings = await getSettings();
-    return json({ boards: cached ?? [], defaultBoardId: settings.default_board_id });
+    return json({ pages: cached ?? [], defaultPageId: settings.default_page_id });
   } catch (err) {
-    if (err instanceof PinterestNotConnectedError) return json({ error: err.message }, 409);
-    return json({ error: err instanceof Error ? err.message : "Failed to load boards." }, 502);
+    if (err instanceof FacebookNotConnectedError) return json({ error: err.message }, 409);
+    return json({ error: err instanceof Error ? err.message : "Failed to load Pages." }, 502);
   }
 }
 
@@ -359,7 +383,7 @@ async function getBoards(refresh: boolean) {
  */
 function redirectToSettings(origin: string, status: "connected" | "error", message?: string) {
   const target = new URL("/dashboard/settings", origin || env.siteUrl);
-  target.searchParams.set("pinterest", status);
+  target.searchParams.set("facebook", status);
   if (message) target.searchParams.set("message", message);
   return NextResponse.redirect(target);
 }
@@ -382,17 +406,34 @@ async function oauthCallback(req: Request, url: URL) {
   }
 
   try {
-    const token = await exchangeCodeForToken(code);
+    // The short-lived token is immediately traded up: Page tokens minted from a
+    // long-lived user token never expire, which is what the autopilot needs.
+    const shortLived = await exchangeCodeForToken(code);
+    const longLived = await exchangeForLongLivedToken(shortLived.access_token);
+
     await updateSettings({
-      pinterest_access_token: token.access_token,
-      pinterest_refresh_token: token.refresh_token,
-      pinterest_token_expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
+      facebook_user_token: longLived.access_token,
+      facebook_token_expires_at: longLived.expires_in
+        ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
+        : null,
     });
 
-    // Best-effort: the connection still counts as successful without a username.
+    // Best-effort extras: the connection still counts as successful without a
+    // display name, and without a Page the user simply picks one next.
     try {
       const account = await fetchAccount();
-      await updateSettings({ pinterest_username: account.username });
+      await updateSettings({ facebook_user_name: account.name });
+    } catch {}
+
+    try {
+      const pages = await fetchPages();
+      if (pages.length === 1) {
+        await updateSettings({
+          default_page_id: pages[0].id,
+          default_page_name: pages[0].name,
+          default_page_token: pages[0].access_token,
+        });
+      }
     } catch {}
 
     const res = redirectToSettings(url.origin, "connected");
@@ -424,10 +465,10 @@ async function runCron(req: Request, url: URL) {
     }
   }
 
-  const due = await listDuePins(new Date().toISOString());
+  const due = await listDuePosts(new Date().toISOString());
   const queueResults = [];
-  for (const pin of due) {
-    const result = await publishPinNow(pin.id);
+  for (const post of due) {
+    const result = await publishPostNow(post.id);
     queueResults.push({ id: result.id, status: result.status });
   }
 

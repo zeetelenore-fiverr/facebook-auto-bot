@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Pinterest Auto Bot",
-  description: "Generate and auto-post highly optimized Pinterest pins from any topic.",
+  title: "Facebook Auto Bot",
+  description: "Generate and auto-post optimized Facebook Page posts from any topic.",
 };
 
 // Runs before paint to apply the saved theme without a light->dark flash.

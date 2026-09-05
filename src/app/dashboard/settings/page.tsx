@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  PinterestLogo,
+  FacebookLogo,
   CheckCircle,
   WarningCircle,
   LinkSimple,
@@ -29,11 +29,11 @@ const TIMEZONES = [
 ];
 
 interface SettingsState {
-  pinterest_connected: boolean;
-  /** False when the deployment has no real Pinterest app credentials. */
-  pinterest_configured?: boolean;
-  pinterest_username: string | null;
-  default_board_name: string | null;
+  facebook_connected: boolean;
+  /** False when the deployment has no real Meta app credentials. */
+  facebook_configured?: boolean;
+  facebook_user_name: string | null;
+  default_page_name: string | null;
   image_source: ImageSourcePref;
   utm_suffix: string;
   auto_post_enabled: boolean;
@@ -58,7 +58,7 @@ function SettingsForm() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const oauthStatus = params.get("pinterest");
+  const oauthStatus = params.get("facebook");
   const oauthMessage = params.get("message");
 
   useEffect(() => {
@@ -90,8 +90,10 @@ function SettingsForm() {
 
   async function disconnect() {
     setDisconnecting(true);
-    await fetch("/api/pinterest/disconnect", { method: "POST" });
-    setSettings((s) => (s ? { ...s, pinterest_connected: false, pinterest_username: null, default_board_name: null } : s));
+    await fetch("/api/facebook/disconnect", { method: "POST" });
+    setSettings((s) =>
+      s ? { ...s, facebook_connected: false, facebook_user_name: null, default_page_name: null } : s
+    );
     setDisconnecting(false);
   }
 
@@ -119,33 +121,35 @@ function SettingsForm() {
     <div className="mx-auto max-w-3xl space-y-6">
       {oauthStatus === "connected" && (
         <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-success">
-          <CheckCircle size={18} /> Pinterest account connected.
+          <CheckCircle size={18} /> Facebook account connected.
         </div>
       )}
       {oauthStatus === "error" && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-sm text-destructive">
-          <WarningCircle size={18} /> {oauthMessage ?? "Couldn't connect Pinterest."}
+          <WarningCircle size={18} /> {oauthMessage ?? "Couldn't connect Facebook."}
         </div>
       )}
 
-      {/* Pinterest connection */}
+      {/* Facebook connection */}
       <Card>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <PinterestLogo size={22} weight="fill" />
+              <FacebookLogo size={22} weight="fill" />
             </div>
             <div>
-              <h2 className="font-heading font-bold text-foreground">Pinterest account</h2>
-              {settings.pinterest_connected ? (
-                <p className="mt-0.5 text-sm text-success">Connected as @{settings.pinterest_username}</p>
-              ) : settings.pinterest_configured === false ? (
+              <h2 className="font-heading font-bold text-foreground">Facebook account</h2>
+              {settings.facebook_connected ? (
+                <p className="mt-0.5 text-sm text-success">
+                  Connected as {settings.facebook_user_name ?? "your account"}
+                </p>
+              ) : settings.facebook_configured === false ? (
                 <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
-                  This deployment has no Pinterest app credentials yet, so connecting
-                  would fail on Pinterest&apos;s side. Add{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">PINTEREST_APP_ID</code>{" "}
+                  This deployment has no Meta app credentials yet, so connecting
+                  would fail on Facebook&apos;s side. Add{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">FACEBOOK_APP_ID</code>{" "}
                   and{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">PINTEREST_APP_SECRET</code>{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">FACEBOOK_APP_SECRET</code>{" "}
                   to enable it. Everything else works without them.
                 </p>
               ) : (
@@ -153,17 +157,17 @@ function SettingsForm() {
               )}
             </div>
           </div>
-          {settings.pinterest_connected ? (
+          {settings.facebook_connected ? (
             <Button size="sm" variant="secondary" onClick={disconnect} disabled={disconnecting}>
               <LinkBreak size={14} /> Disconnect
             </Button>
           ) : (
             <a
-              href="/api/pinterest/oauth/start"
-              aria-disabled={settings.pinterest_configured === false}
-              className={settings.pinterest_configured === false ? "pointer-events-none" : undefined}
+              href="/api/facebook/oauth/start"
+              aria-disabled={settings.facebook_configured === false}
+              className={settings.facebook_configured === false ? "pointer-events-none" : undefined}
             >
-              <Button size="sm" disabled={settings.pinterest_configured === false}>
+              <Button size="sm" disabled={settings.facebook_configured === false}>
                 <LinkSimple size={14} /> Connect
               </Button>
             </a>
@@ -197,7 +201,7 @@ function SettingsForm() {
 
         <div className="mt-4">
           <label className="text-xs font-semibold text-muted-foreground">
-            Link suffix appended to every pin description (optional, e.g. UTM tag)
+            Text appended to every post (optional, e.g. a UTM link or sign-off)
           </label>
           <input
             value={settings.utm_suffix}
@@ -239,9 +243,9 @@ function SettingsForm() {
           </button>
         </div>
 
-        {!settings.default_board_name && (
+        {!settings.default_page_name && (
           <p className="mt-3 text-xs text-warning">
-            Set a default board on the Boards page — autopilot needs one to post to.
+            Set a default Page on the Pages screen — autopilot needs one to post to.
           </p>
         )}
 

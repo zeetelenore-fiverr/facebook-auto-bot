@@ -5,7 +5,7 @@ import { Rocket, Trash, PencilSimple, X, Check } from "@phosphor-icons/react/dis
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import type { Pin } from "@/lib/types";
+import type { Post } from "@/lib/types";
 
 function toLocalInputValue(iso: string | null) {
   if (!iso) return "";
@@ -15,7 +15,7 @@ function toLocalInputValue(iso: string | null) {
 }
 
 export default function QueuePage() {
-  const [pins, setPins] = useState<Pin[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -26,10 +26,10 @@ export default function QueuePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/pins?status=draft,scheduled");
+      const res = await fetch("/api/posts?status=draft,scheduled");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load the queue.");
-      setPins(data.pins ?? []);
+      setPosts(data.posts ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load the queue.");
     } finally {
@@ -45,10 +45,10 @@ export default function QueuePage() {
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch(`/api/pins/${id}/post-now`, { method: "POST" });
+      const res = await fetch(`/api/posts/${id}/post-now`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      if (data.pin?.status === "failed") throw new Error(data.pin.error_message ?? "Posting failed.");
+      if (data.post?.status === "failed") throw new Error(data.post.error_message ?? "Posting failed.");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to post.");
@@ -60,7 +60,7 @@ export default function QueuePage() {
   async function remove(id: string) {
     setBusyId(id);
     try {
-      await fetch(`/api/pins/${id}`, { method: "DELETE" });
+      await fetch(`/api/posts/${id}`, { method: "DELETE" });
       await load();
     } finally {
       setBusyId(null);
@@ -71,7 +71,7 @@ export default function QueuePage() {
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch(`/api/pins/${id}`, {
+      const res = await fetch(`/api/posts/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,27 +101,27 @@ export default function QueuePage() {
         <Card>
         {loading ? (
           <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
-        ) : pins.length === 0 ? (
+        ) : posts.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Nothing queued. Generate a pin and save it as a draft or schedule it to see it here.
+            Nothing queued. Generate a post and save it as a draft or schedule it to see it here.
           </p>
         ) : (
           <div className="divide-y divide-border">
-            {pins.map((pin) => (
-              <div key={pin.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+            {posts.map((post) => (
+              <div key={post.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={pin.image_url} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                <img src={post.image_url} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate font-medium text-foreground">{pin.title}</p>
-                    <StatusBadge status={pin.status} />
+                    <p className="truncate font-medium text-foreground">{post.title}</p>
+                    <StatusBadge status={post.status} />
                   </div>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{pin.description}</p>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{post.description}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Board: {pin.board_name ?? "—"}
-                    {pin.scheduled_at &&
-                      ` · Scheduled for ${new Date(pin.scheduled_at).toLocaleString("en-US", {
+                    Page: {post.page_name ?? "—"}
+                    {post.scheduled_at &&
+                      ` · Scheduled for ${new Date(post.scheduled_at).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
                         hour: "numeric",
@@ -129,7 +129,7 @@ export default function QueuePage() {
                       })}`}
                   </p>
 
-                  {editingId === pin.id && (
+                  {editingId === post.id && (
                     <div className="mt-2 flex items-center gap-2">
                       <input
                         type="datetime-local"
@@ -138,7 +138,7 @@ export default function QueuePage() {
                         className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
                       />
                       <button
-                        onClick={() => saveSchedule(pin.id)}
+                        onClick={() => saveSchedule(post.id)}
                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-success/10 text-success"
                         aria-label="Save"
                       >
@@ -160,16 +160,16 @@ export default function QueuePage() {
                     size="sm"
                     variant="secondary"
                     onClick={() => {
-                      setEditingId(pin.id);
-                      setDraftTime(toLocalInputValue(pin.scheduled_at));
+                      setEditingId(post.id);
+                      setDraftTime(toLocalInputValue(post.scheduled_at));
                     }}
                   >
                     <PencilSimple size={14} /> Reschedule
                   </Button>
-                  <Button size="sm" onClick={() => postNow(pin.id)} disabled={busyId === pin.id}>
-                    <Rocket size={14} weight="fill" /> {busyId === pin.id ? "Posting…" : "Post now"}
+                  <Button size="sm" onClick={() => postNow(post.id)} disabled={busyId === post.id}>
+                    <Rocket size={14} weight="fill" /> {busyId === post.id ? "Posting…" : "Post now"}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(pin.id)} disabled={busyId === pin.id}>
+                  <Button size="sm" variant="ghost" onClick={() => remove(post.id)} disabled={busyId === post.id}>
                     <Trash size={14} />
                   </Button>
                 </div>

@@ -3,11 +3,12 @@ import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { ImageSource, ImageSourcePref } from "@/lib/types";
 
-const STORAGE_BUCKET = "pin-images";
+const STORAGE_BUCKET = "post-images";
 
-// Pinterest's recommended pin ratio is 2:3.
-const WIDTH = 1000;
-const HEIGHT = 1500;
+// Square reads well in the Facebook feed on both mobile and desktop, and
+// avoids the centre-crop that wide images get in the timeline.
+const WIDTH = 1200;
+const HEIGHT = 1200;
 
 export function resolveImageSource(pref: ImageSourcePref): ImageSource {
   if (pref === "mixed") return Math.random() < 0.5 ? "ai" : "stock";
@@ -29,7 +30,7 @@ async function fetchStockImageBytes(query: string): Promise<Blob> {
 
   const searchUrl = `https://api.pexels.com/v1/search?${new URLSearchParams({
     query,
-    orientation: "portrait",
+    orientation: "square",
     per_page: "10",
   })}`;
   const searchRes = await fetch(searchUrl, {
@@ -38,11 +39,11 @@ async function fetchStockImageBytes(query: string): Promise<Blob> {
   });
   if (!searchRes.ok) throw new Error(`Pexels search failed (${searchRes.status})`);
   const data = await searchRes.json();
-  const photos: Array<{ src: { portrait: string; large2x: string } }> = data.photos ?? [];
+  const photos: Array<{ src: { large2x: string; large: string } }> = data.photos ?? [];
   if (photos.length === 0) throw new Error("No stock photos found for this topic");
 
   const chosen = photos[Math.floor(Math.random() * photos.length)];
-  const imageRes = await fetch(chosen.src.large2x ?? chosen.src.portrait, {
+  const imageRes = await fetch(chosen.src.large2x ?? chosen.src.large, {
     signal: AbortSignal.timeout(20_000),
   });
   if (!imageRes.ok) throw new Error("Failed to download chosen stock photo");
@@ -50,11 +51,12 @@ async function fetchStockImageBytes(query: string): Promise<Blob> {
 }
 
 /**
- * Generates or sources a pin image, then re-hosts it in our own Supabase
- * Storage bucket rather than linking the free provider's URL directly.
- * Both free providers are best-effort community services with no uptime
- * guarantee — re-hosting means a pin's image keeps working forever, and
- * Pinterest's own fetcher always sees a stable, fast, first-party URL.
+ * Generates or sources a post image, then re-hosts it in our own Supabase
+ * Storage bucket rather than linking the free provider's URL directly. Both
+ * free providers are best-effort community services with no uptime guarantee —
+ * re-hosting means a post's image keeps working forever, and Facebook's own
+ * fetcher (which downloads the image itself at publish time) always sees a
+ * stable, fast, first-party URL.
  */
 export async function generateImage(
   prompt: string,

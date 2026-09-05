@@ -1,22 +1,22 @@
 import { getSettings, updateSettings } from "@/lib/db/settings";
-import { createPinRecord } from "@/lib/db/pins";
-import { publishPinNow } from "@/lib/pinterest/publish";
+import { createPostRecord } from "@/lib/db/posts";
+import { publishPostNow } from "@/lib/facebook/publish";
 import { generateContent } from "@/lib/ai/text";
 import { generateImage } from "@/lib/ai/image";
 import { getTrendingTopics } from "@/lib/trends";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { localParts, startOfTodayIso } from "@/lib/time";
-import { isPinterestConnected } from "@/lib/types";
-import type { Pin } from "@/lib/types";
+import { isFacebookConnected } from "@/lib/types";
+import type { Post } from "@/lib/types";
 
 export type AutopilotResult =
-  | { ran: true; pin: Pin }
+  | { ran: true; post: Post }
   | {
       ran: false;
       reason:
         | "disabled"
         | "not_connected"
-        | "no_default_board"
+        | "no_default_page"
         | "outside_posting_hours"
         | "already_posted_this_slot"
         | "daily_quota_reached";
@@ -24,7 +24,7 @@ export type AutopilotResult =
 
 /**
  * The "fully automatic" half of the product: on each cron tick, decide
- * whether it is time to invent a fresh pin on its own (no human in the
+ * whether it is time to invent a fresh post on its own (no human in the
  * loop) and, if so, do it — pick a topic, write the copy, source the
  * image, and publish. Called once per cron invocation; safe to call more
  * often than the posting cadence since every guard is idempotent.
@@ -33,9 +33,9 @@ export async function maybeRunAutopilot(): Promise<AutopilotResult> {
   const settings = await getSettings();
 
   if (!settings.auto_post_enabled) return { ran: false, reason: "disabled" };
-  if (!isPinterestConnected(settings)) return { ran: false, reason: "not_connected" };
-  if (!settings.default_board_id || !settings.default_board_name) {
-    return { ran: false, reason: "no_default_board" };
+  if (!isFacebookConnected(settings)) return { ran: false, reason: "not_connected" };
+  if (!settings.default_page_id || !settings.default_page_token) {
+    return { ran: false, reason: "no_default_page" };
   }
 
   const { dateKey, hour } = localParts(new Date(), settings.timezone);
@@ -52,7 +52,7 @@ export async function maybeRunAutopilot(): Promise<AutopilotResult> {
 
   const db = supabaseAdmin();
   const { count } = await db
-    .from("pins")
+    .from("posts")
     .select("id", { count: "exact", head: true })
     .eq("status", "posted")
     .gte("posted_at", startOfTodayIso(settings.timezone));
@@ -67,22 +67,22 @@ export async function maybeRunAutopilot(): Promise<AutopilotResult> {
   const content = await generateContent(topic);
   const image = await generateImage(`${content.title} — ${topic}`, settings.image_source);
 
-  const draft = await createPinRecord({
+  const draft = await createPostRecord({
     topic,
     title: content.title,
     description: content.description,
     hashtags: content.hashtags,
     image_url: image.url,
     image_source: image.source,
-    destination_url: null,
-    board_id: settings.default_board_id,
-    board_name: settings.default_board_name,
+    link_url: null,
+    page_id: settings.default_page_id,
+    page_name: settings.default_page_name,
     scheduled_at: null,
     status: "draft",
   });
 
-  const published = await publishPinNow(draft.id);
+  const published = await publishPostNow(draft.id);
   await updateSettings({ last_auto_post_at: new Date().toISOString() });
 
-  return { ran: true, pin: published };
+  return { ran: true, post: published };
 }

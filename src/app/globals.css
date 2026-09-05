@@ -11,9 +11,9 @@
   --muted-foreground: #6b7280;
   --border: #e7e5ea;
 
-  --primary: #e01e4d;
+  --primary: #2c5fd4;
   --primary-foreground: #ffffff;
-  --primary-hover: #c81842;
+  --primary-hover: #2450b4;
 
   --accent: #2563eb;
   --accent-foreground: #ffffff;
@@ -37,9 +37,9 @@
   --muted-foreground: #9aa0ac;
   --border: #27272f;
 
-  --primary: #ff3d68;
+  --primary: #5b8cff;
   --primary-foreground: #0b0b0f;
-  --primary-hover: #ff5c80;
+  --primary-hover: #7ba3ff;
 
   --accent: #5b8def;
   --accent-foreground: #0b0b0f;

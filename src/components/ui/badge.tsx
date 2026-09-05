@@ -1,21 +1,21 @@
 import { cn } from "@/lib/cn";
-import type { PinStatus } from "@/lib/types";
+import type { PostStatus } from "@/lib/types";
 
-const STATUS_STYLES: Record<PinStatus, string> = {
+const STATUS_STYLES: Record<PostStatus, string> = {
   draft: "bg-surface-2 text-muted-foreground",
   scheduled: "bg-warning/15 text-warning",
   posted: "bg-success/15 text-success",
   failed: "bg-destructive/15 text-destructive",
 };
 
-const STATUS_LABEL: Record<PinStatus, string> = {
+const STATUS_LABEL: Record<PostStatus, string> = {
   draft: "Draft",
   scheduled: "Scheduled",
   posted: "Posted",
   failed: "Failed",
 };
 
-export function StatusBadge({ status }: { status: PinStatus }) {
+export function StatusBadge({ status }: { status: PostStatus }) {
   return (
     <span
       className={cn(

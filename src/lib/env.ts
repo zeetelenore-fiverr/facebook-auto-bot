@@ -35,25 +35,25 @@ export const env = {
     return required("SESSION_SECRET");
   },
 
-  // Pinterest OAuth app
-  get pinterestAppId() {
-    return required("PINTEREST_APP_ID");
+  // Meta (Facebook) app
+  get facebookAppId() {
+    return required("FACEBOOK_APP_ID");
   },
-  get pinterestAppSecret() {
-    return required("PINTEREST_APP_SECRET");
+  get facebookAppSecret() {
+    return required("FACEBOOK_APP_SECRET");
   },
-  get pinterestRedirectUri() {
-    return required("PINTEREST_REDIRECT_URI");
+  get facebookRedirectUri() {
+    return required("FACEBOOK_REDIRECT_URI");
   },
   /**
-   * Whether real Pinterest credentials exist. Deployments are seeded with
+   * Whether real Meta credentials exist. Deployments are seeded with
    * "not-configured" placeholders so the rest of the app can run without a
-   * Pinterest developer app; without this check the OAuth redirect would send
-   * the user to Pinterest's own "we couldn't find that app" 400 page.
+   * Meta app; without this check the OAuth redirect would send the user to
+   * Facebook's own "invalid app id" error page.
    */
-  get pinterestConfigured() {
-    const id = optional("PINTEREST_APP_ID");
-    const secret = optional("PINTEREST_APP_SECRET");
+  get facebookConfigured() {
+    const id = optional("FACEBOOK_APP_ID");
+    const secret = optional("FACEBOOK_APP_SECRET");
     const placeholder = (v: string) => !v || v === "not-configured";
     return !placeholder(id) && !placeholder(secret);
   },

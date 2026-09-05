@@ -5,28 +5,28 @@ import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
-import type { Pin, PinStatus } from "@/lib/types";
+import type { Post, PostStatus } from "@/lib/types";
 
-const FILTERS: { label: string; value: PinStatus | "all" }[] = [
+const FILTERS: { label: string; value: PostStatus | "all" }[] = [
   { label: "All", value: "all" },
   { label: "Posted", value: "posted" },
   { label: "Failed", value: "failed" },
 ];
 
 export default function HistoryPage() {
-  const [pins, setPins] = useState<Pin[]>([]);
-  const [filter, setFilter] = useState<PinStatus | "all">("all");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filter, setFilter] = useState<PostStatus | "all">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`/api/pins?status=${filter === "all" ? "posted,failed" : filter}`)
+    fetch(`/api/posts?status=${filter === "all" ? "posted,failed" : filter}`)
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error ?? "Failed to load history.");
-        setPins(data.pins ?? []);
+        setPosts(data.posts ?? []);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load history."))
       .finally(() => setLoading(false));
@@ -61,43 +61,43 @@ export default function HistoryPage() {
       <Card>
         {loading ? (
           <p className="py-10 text-center text-sm text-muted-foreground">Loading…</p>
-        ) : pins.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">No pins here yet.</p>
+        ) : posts.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">No posts here yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="pb-2 font-medium">Pin</th>
-                  <th className="hidden pb-2 font-medium sm:table-cell">Board</th>
+                  <th className="pb-2 font-medium">Post</th>
+                  <th className="hidden pb-2 font-medium sm:table-cell">Page</th>
                   <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">When</th>
                   <th className="pb-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
-                {pins.map((pin) => (
-                  <tr key={pin.id} className="border-b border-border last:border-0">
+                {posts.map((post) => (
+                  <tr key={post.id} className="border-b border-border last:border-0">
                     <td className="max-w-[260px] py-3 pr-3">
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={pin.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                        <img src={post.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-foreground">{pin.title}</p>
-                          {pin.status === "failed" && pin.error_message && (
-                            <p className="truncate text-xs text-destructive">{pin.error_message}</p>
+                          <p className="truncate font-medium text-foreground">{post.title}</p>
+                          {post.status === "failed" && post.error_message && (
+                            <p className="truncate text-xs text-destructive">{post.error_message}</p>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="hidden py-3 pr-3 text-muted-foreground sm:table-cell">
-                      {pin.board_name ?? "—"}
+                      {post.page_name ?? "—"}
                     </td>
                     <td className="py-3 pr-3">
-                      <StatusBadge status={pin.status} />
+                      <StatusBadge status={post.status} />
                     </td>
                     <td className="py-3 pr-3 text-xs text-muted-foreground">
-                      {new Date(pin.posted_at ?? pin.created_at).toLocaleString("en-US", {
+                      {new Date(post.posted_at ?? post.created_at).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
                         hour: "numeric",
@@ -105,9 +105,9 @@ export default function HistoryPage() {
                       })}
                     </td>
                     <td className="py-3 text-right">
-                      {pin.pinterest_pin_id && (
+                      {post.facebook_post_id && (
                         <a
-                          href={`https://www.pinterest.com/pin/${pin.pinterest_pin_id}/`}
+                          href={`https://www.facebook.com/${post.facebook_post_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
