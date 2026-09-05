@@ -65,7 +65,11 @@ export async function GET(req: Request, ctx: Ctx) {
       const { pinterest_access_token, pinterest_refresh_token, ...safe } = settings;
       void pinterest_access_token;
       void pinterest_refresh_token;
-      return json({ ...safe, pinterest_connected: Boolean(settings.pinterest_access_token) });
+      return json({
+        ...safe,
+        pinterest_connected: Boolean(settings.pinterest_access_token),
+        pinterest_configured: env.pinterestConfigured,
+      });
     }
 
     if (route === "pins") {
@@ -79,6 +83,13 @@ export async function GET(req: Request, ctx: Ctx) {
     }
 
     if (route === "pinterest/oauth/start") {
+      if (!env.pinterestConfigured) {
+        return redirectToSettings(
+          "error",
+          "This deployment has no Pinterest app credentials yet. Add PINTEREST_APP_ID and PINTEREST_APP_SECRET, then try connecting again."
+        );
+      }
+
       const state = crypto.randomUUID();
       const res = NextResponse.redirect(buildAuthorizeUrl(state));
       res.cookies.set(OAUTH_STATE_COOKIE, state, {

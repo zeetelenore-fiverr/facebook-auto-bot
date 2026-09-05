@@ -30,6 +30,8 @@ const TIMEZONES = [
 
 interface SettingsState {
   pinterest_connected: boolean;
+  /** False when the deployment has no real Pinterest app credentials. */
+  pinterest_configured?: boolean;
   pinterest_username: string | null;
   default_board_name: string | null;
   image_source: ImageSourcePref;
@@ -137,6 +139,15 @@ function SettingsForm() {
               <h2 className="font-heading font-bold text-foreground">Pinterest account</h2>
               {settings.pinterest_connected ? (
                 <p className="mt-0.5 text-sm text-success">Connected as @{settings.pinterest_username}</p>
+              ) : settings.pinterest_configured === false ? (
+                <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
+                  This deployment has no Pinterest app credentials yet, so connecting
+                  would fail on Pinterest&apos;s side. Add{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">PINTEREST_APP_ID</code>{" "}
+                  and{" "}
+                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">PINTEREST_APP_SECRET</code>{" "}
+                  to enable it. Everything else works without them.
+                </p>
               ) : (
                 <p className="mt-0.5 text-sm text-muted-foreground">Not connected yet</p>
               )}
@@ -147,8 +158,12 @@ function SettingsForm() {
               <LinkBreak size={14} /> Disconnect
             </Button>
           ) : (
-            <a href="/api/pinterest/oauth/start">
-              <Button size="sm">
+            <a
+              href="/api/pinterest/oauth/start"
+              aria-disabled={settings.pinterest_configured === false}
+              className={settings.pinterest_configured === false ? "pointer-events-none" : undefined}
+            >
+              <Button size="sm" disabled={settings.pinterest_configured === false}>
                 <LinkSimple size={14} /> Connect
               </Button>
             </a>

@@ -45,6 +45,18 @@ export const env = {
   get pinterestRedirectUri() {
     return required("PINTEREST_REDIRECT_URI");
   },
+  /**
+   * Whether real Pinterest credentials exist. Deployments are seeded with
+   * "not-configured" placeholders so the rest of the app can run without a
+   * Pinterest developer app; without this check the OAuth redirect would send
+   * the user to Pinterest's own "we couldn't find that app" 400 page.
+   */
+  get pinterestConfigured() {
+    const id = optional("PINTEREST_APP_ID");
+    const secret = optional("PINTEREST_APP_SECRET");
+    const placeholder = (v: string) => !v || v === "not-configured";
+    return !placeholder(id) && !placeholder(secret);
+  },
 
   // Free-tier LLM keys. Both are optional: without either one the app falls
   // back to the keyless Pollinations endpoint, and then to template copy.
