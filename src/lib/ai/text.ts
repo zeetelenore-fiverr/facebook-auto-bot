@@ -133,18 +133,17 @@ function providerChain(topic: string): Attempt[] {
 
   // A configured free-tier key beats the keyless service on both quality and
   // reliability, so those go first whenever one is present.
+  // Groq retires model ids without notice (llama-3.3-70b-versatile vanished
+  // mid-build), so try a short list rather than pinning a single name.
   const groqKey = env.groqApiKey;
   if (groqKey) {
-    chain.push({
-      provider: "groq",
-      run: () =>
-        chatCompletion(
-          "https://api.groq.com/openai/v1/chat/completions",
-          "llama-3.3-70b-versatile",
-          topic,
-          groqKey
-        ),
-    });
+    for (const model of ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]) {
+      chain.push({
+        provider: "groq",
+        run: () =>
+          chatCompletion("https://api.groq.com/openai/v1/chat/completions", model, topic, groqKey),
+      });
+    }
   }
 
   const geminiKey = env.geminiApiKey;
@@ -164,12 +163,10 @@ export async function generateContent(topic: string): Promise<GeneratedContent> 
   const failures: string[] = [];
 
   for (const { provider, run } of providerChain(topic)) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        return { ...parseContent(await run()), provider };
-      } catch (err) {
-        failures.push(`${provider}: ${err instanceof Error ? err.message : String(err)}`);
-      }
+    try {
+      return { ...parseContent(await run()), provider };
+    } catch (err) {
+      failures.push(`${provider}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
