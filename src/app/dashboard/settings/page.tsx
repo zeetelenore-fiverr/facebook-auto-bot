@@ -8,6 +8,9 @@ import {
   WarningCircle,
   LinkSimple,
   LinkBreak,
+  Key,
+  Copy,
+  Check,
 } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,9 @@ interface SettingsState {
   facebook_connected: boolean;
   /** False when the deployment has no real Meta app credentials. */
   facebook_configured?: boolean;
+  facebook_app_id: string | null;
+  /** The secret itself never reaches the browser — only whether one is stored. */
+  facebook_app_secret_set?: boolean;
   facebook_user_name: string | null;
   default_page_name: string | null;
   image_source: ImageSourcePref;
@@ -58,6 +64,19 @@ function SettingsForm() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const [appId, setAppId] = useState("");
+  const [appSecret, setAppSecret] = useState("");
+  const [savingCreds, setSavingCreds] = useState(false);
+  const [credsError, setCredsError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  // Read from the browser rather than configured, so it always matches the
+  // hostname the user is actually on — the value Facebook will compare against.
+  const [redirectUri, setRedirectUri] = useState("");
+
+  useEffect(() => {
+    setRedirectUri(`${window.location.origin}/api/facebook/oauth/callback`);
+  }, []);
+
   const oauthStatus = params.get("facebook");
   const oauthMessage = params.get("message");
 
@@ -67,9 +86,59 @@ function SettingsForm() {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error ?? "Failed to load settings.");
         setSettings(data);
+        setAppId(data.facebook_app_id ?? "");
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Failed to load settings."));
   }, []);
+
+  async function saveCredentials() {
+    setCredsError(null);
+    if (!appId.trim()) {
+      setCredsError("Enter the App ID from your Meta app.");
+      return;
+    }
+    // An already-stored secret is left alone unless a new one is typed, so the
+    // masked field does not have to round-trip the real value.
+    if (!appSecret.trim() && !settings?.facebook_app_secret_set) {
+      setCredsError("Enter the App Secret from App settings > Basic.");
+      return;
+    }
+
+    setSavingCreds(true);
+    try {
+      const res = await fetch("/api/facebook/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appId: appId.trim(),
+          appSecret: appSecret.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't save those credentials.");
+
+      setAppSecret("");
+      setSettings((s) =>
+        s
+          ? { ...s, facebook_app_id: appId.trim(), facebook_app_secret_set: true, facebook_configured: true }
+          : s
+      );
+    } catch (err) {
+      setCredsError(err instanceof Error ? err.message : "Couldn't save those credentials.");
+    } finally {
+      setSavingCreds(false);
+    }
+  }
+
+  async function copyRedirectUri() {
+    try {
+      await navigator.clipboard.writeText(redirectUri);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCredsError("Copying failed — select the field and copy manually.");
+    }
+  }
 
   async function save(patch: Partial<SettingsState>) {
     setSaving(true);
@@ -145,12 +214,8 @@ function SettingsForm() {
                 </p>
               ) : settings.facebook_configured === false ? (
                 <p className="mt-0.5 max-w-md text-sm text-muted-foreground">
-                  This deployment has no Meta app credentials yet, so connecting
-                  would fail on Facebook&apos;s side. Add{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">FACEBOOK_APP_ID</code>{" "}
-                  and{" "}
-                  <code className="rounded bg-surface-2 px-1 py-0.5 text-xs">FACEBOOK_APP_SECRET</code>{" "}
-                  to enable it. Everything else works without them.
+                  Add your Meta App ID and secret below to enable connecting.
+                  Everything else works without them.
                 </p>
               ) : (
                 <p className="mt-0.5 text-sm text-muted-foreground">Not connected yet</p>
@@ -172,6 +237,83 @@ function SettingsForm() {
               </Button>
             </a>
           )}
+        </div>
+      </Card>
+
+      {/* Meta app credentials */}
+      <Card>
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-2 text-muted-foreground">
+            <Key size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading font-bold text-foreground">Meta app</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Create one at{" "}
+              <a
+                href="https://developers.facebook.com/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                developers.facebook.com/apps
+              </a>{" "}
+              (type: Business). Posting to a Page you administer needs no App Review.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">App ID</label>
+                <input
+                  value={appId}
+                  onChange={(e) => setAppId(e.target.value)}
+                  placeholder="1234567890123456"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">App Secret</label>
+                <input
+                  type="password"
+                  value={appSecret}
+                  onChange={(e) => setAppSecret(e.target.value)}
+                  placeholder={
+                    settings.facebook_app_secret_set ? "•••• saved — type to replace" : "from App settings > Basic"
+                  }
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Redirect URI — paste this into Facebook Login &gt; Settings &gt; Valid OAuth Redirect URIs
+              </label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  readOnly
+                  value={redirectUri}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-full rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-xs text-muted-foreground outline-none"
+                />
+                <Button size="sm" variant="secondary" onClick={copyRedirectUri}>
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            </div>
+
+            {credsError && <p className="mt-2 text-xs text-destructive">{credsError}</p>}
+
+            <div className="mt-4 flex items-center gap-2">
+              <Button size="sm" onClick={saveCredentials} disabled={savingCreds}>
+                {savingCreds ? "Saving…" : "Save credentials"}
+              </Button>
+              {settings.facebook_configured && (
+                <span className="text-xs font-medium text-success">Credentials stored</span>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -251,7 +393,7 @@ function SettingsForm() {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground">Pins per day</label>
+            <label className="text-xs font-semibold text-muted-foreground">Posts per day</label>
             <input
               type="number"
               min={1}

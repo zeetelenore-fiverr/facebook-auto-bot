@@ -4,6 +4,9 @@ export type PostStatus = "draft" | "scheduled" | "posted" | "failed";
 
 export interface AppSettings {
   id: 1;
+  /** Meta app credentials, normally entered in Settings rather than env vars. */
+  facebook_app_id: string | null;
+  facebook_app_secret: string | null;
   /** Long-lived user token — lists Pages and mints Page tokens, never posts. */
   facebook_user_token: string | null;
   facebook_token_expires_at: string | null;

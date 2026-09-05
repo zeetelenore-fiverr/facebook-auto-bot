@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
-import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
+import {
+  createSessionToken,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  verifySessionToken,
+} from "@/lib/auth/session";
 import { generateContent } from "@/lib/ai/text";
 import { generateImage } from "@/lib/ai/image";
 import { getTrendingTopics } from "@/lib/trends";
@@ -20,6 +25,7 @@ import {
   exchangeCodeForToken,
   exchangeForLongLivedToken,
 } from "@/lib/facebook/oauth";
+import { getFacebookCredentials, isFacebookConfigured } from "@/lib/facebook/credentials";
 import { OAUTH_STATE_COOKIE } from "@/lib/facebook/oauth-state";
 import { publishPostNow } from "@/lib/facebook/publish";
 import { maybeRunAutopilot } from "@/lib/autopilot";
@@ -50,6 +56,50 @@ function notFound() {
   return json({ error: "Not found." }, 404);
 }
 
+function unauthorized() {
+  return json({ error: "Unauthorized." }, 401);
+}
+
+/**
+ * Routes reachable without the admin session.
+ *
+ * Everything else requires it. This app stores Meta app credentials and
+ * non-expiring Page tokens, and the middleware deliberately does not cover
+ * `/api/*`, so without this check the whole API — read settings, publish,
+ * delete, disconnect — would be open to anyone who knew the deployment's URL.
+ * The OAuth callback is exempt because it is a redirect back from Facebook and
+ * is already protected by its single-use `state` cookie.
+ */
+const OPEN_ROUTES = new Set(["auth/login", "auth/logout", "facebook/oauth/callback"]);
+
+async function hasSession(req: Request): Promise<boolean> {
+  const token = req.headers
+    .get("cookie")
+    ?.split("; ")
+    .find((c) => c.startsWith(`${SESSION_COOKIE}=`))
+    ?.split("=")[1];
+  return verifySessionToken(token);
+}
+
+/**
+ * The cron route authenticates with CRON_SECRET when one is set. When it is
+ * not, it falls back to requiring the admin session rather than being open —
+ * an unset optional variable must not silently expose a publishing endpoint.
+ */
+async function cronAuthorized(req: Request, url: URL): Promise<boolean> {
+  if (!env.cronSecret) return hasSession(req);
+  const auth = req.headers.get("authorization");
+  return auth === `Bearer ${env.cronSecret}` || url.searchParams.get("secret") === env.cronSecret;
+}
+
+async function guard(route: string, req: Request, url: URL): Promise<Response | null> {
+  if (OPEN_ROUTES.has(route)) return null;
+  if (route === "cron/process-queue") {
+    return (await cronAuthorized(req, url)) ? null : unauthorized();
+  }
+  return (await hasSession(req)) ? null : unauthorized();
+}
+
 async function safely(handler: () => Promise<Response>): Promise<Response> {
   try {
     return await handler();
@@ -60,13 +110,16 @@ async function safely(handler: () => Promise<Response>): Promise<Response> {
 }
 
 /** Tokens must never reach the browser, so they are stripped in one place. */
-function publicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
-  const { facebook_user_token, default_page_token, ...safe } = settings;
+async function publicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
+  const { facebook_user_token, default_page_token, facebook_app_secret, ...safe } = settings;
   return {
     ...safe,
+    // The App ID is public (it travels in the OAuth URL); the secret never
+    // leaves the server, so the UI only learns whether one is stored.
+    facebook_app_secret_set: Boolean(facebook_app_secret),
     facebook_connected: Boolean(facebook_user_token),
     facebook_page_ready: Boolean(default_page_token),
-    facebook_configured: env.facebookConfigured,
+    facebook_configured: await isFacebookConfigured(),
   };
 }
 
@@ -78,12 +131,15 @@ export async function GET(req: Request, ctx: Ctx) {
   const url = new URL(req.url);
 
   return safely(async () => {
+    const denied = await guard(route, req, url);
+    if (denied) return denied;
+
     if (route === "trends") {
       return json(await getTrendingTopics());
     }
 
     if (route === "settings") {
-      return json(publicSettings(await getSettings()));
+      return json(await publicSettings(await getSettings()));
     }
 
     if (route === "posts") {
@@ -99,16 +155,17 @@ export async function GET(req: Request, ctx: Ctx) {
     }
 
     if (route === "facebook/oauth/start") {
-      if (!env.facebookConfigured) {
+      const creds = await getFacebookCredentials(url.origin);
+      if (!creds) {
         return redirectToSettings(
           url.origin,
           "error",
-          "This deployment has no Meta app credentials yet. Add FACEBOOK_APP_ID and FACEBOOK_APP_SECRET, then try connecting again."
+          "Add your Meta App ID and App Secret in Settings first, then try connecting again."
         );
       }
 
       const state = crypto.randomUUID();
-      const res = NextResponse.redirect(buildAuthorizeUrl(state));
+      const res = NextResponse.redirect(buildAuthorizeUrl(creds, state));
       res.cookies.set(OAUTH_STATE_COOKIE, state, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -158,11 +215,22 @@ const CreatePostBody = z.object({
 
 const DefaultPageBody = z.object({ pageId: z.string().min(1) });
 
+const CredentialsBody = z.object({
+  appId: z.string().trim().min(5).max(64),
+  // Optional so the UI can save an edited App ID without re-typing a secret it
+  // never received in the first place.
+  appSecret: z.string().trim().min(10).max(128).optional(),
+});
+
 export async function POST(req: Request, ctx: Ctx) {
   const { path } = await ctx.params;
   const route = path.join("/");
+  const url = new URL(req.url);
 
   return safely(async () => {
+    const denied = await guard(route, req, url);
+    if (denied) return denied;
+
     if (route === "auth/login") {
       const parsed = LoginBody.safeParse(await req.json().catch(() => null));
       if (!parsed.success || parsed.data.password !== env.adminPassword) {
@@ -256,6 +324,29 @@ export async function POST(req: Request, ctx: Ctx) {
       }
     }
 
+    if (route === "facebook/credentials") {
+      const parsed = CredentialsBody.safeParse(await req.json().catch(() => null));
+      if (!parsed.success) {
+        return json({ error: "Enter a valid App ID, and an App Secret of at least 10 characters." }, 400);
+      }
+
+      const existing = await getSettings();
+      if (!parsed.data.appSecret && !existing.facebook_app_secret) {
+        return json({ error: "An App Secret is required the first time." }, 400);
+      }
+
+      await updateSettings({
+        facebook_app_id: parsed.data.appId,
+        ...(parsed.data.appSecret ? { facebook_app_secret: parsed.data.appSecret } : {}),
+      });
+      return json({ ok: true, redirectUri: `${url.origin}/api/facebook/oauth/callback` });
+    }
+
+    if (route === "facebook/credentials/clear") {
+      await updateSettings({ facebook_app_id: null, facebook_app_secret: null });
+      return json({ ok: true });
+    }
+
     if (route === "facebook/disconnect") {
       await updateSettings({
         facebook_user_token: null,
@@ -298,12 +389,16 @@ const UpdatePostBody = z.object({
 export async function PATCH(req: Request, ctx: Ctx) {
   const { path } = await ctx.params;
   const route = path.join("/");
+  const url = new URL(req.url);
 
   return safely(async () => {
+    const denied = await guard(route, req, url);
+    if (denied) return denied;
+
     if (route === "settings") {
       const parsed = SettingsBody.safeParse(await req.json().catch(() => null));
       if (!parsed.success) return json({ error: "Invalid settings payload." }, 400);
-      return json(publicSettings(await updateSettings(parsed.data)));
+      return json(await publicSettings(await updateSettings(parsed.data)));
     }
 
     // posts/<id>
@@ -339,10 +434,15 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
 /* --------------------------------------------------------------- DELETE */
 
-export async function DELETE(_req: Request, ctx: Ctx) {
+export async function DELETE(req: Request, ctx: Ctx) {
   const { path } = await ctx.params;
+  const route = path.join("/");
+  const url = new URL(req.url);
 
   return safely(async () => {
+    const denied = await guard(route, req, url);
+    if (denied) return denied;
+
     if (path.length === 2 && path[0] === "posts") {
       await deletePostRecord(path[1]);
       return json({ ok: true });
@@ -405,11 +505,16 @@ async function oauthCallback(req: Request, url: URL) {
     );
   }
 
+  const creds = await getFacebookCredentials(url.origin);
+  if (!creds) {
+    return redirectToSettings(url.origin, "error", "Meta app credentials are no longer set.");
+  }
+
   try {
     // The short-lived token is immediately traded up: Page tokens minted from a
     // long-lived user token never expire, which is what the autopilot needs.
-    const shortLived = await exchangeCodeForToken(code);
-    const longLived = await exchangeForLongLivedToken(shortLived.access_token);
+    const shortLived = await exchangeCodeForToken(creds, code);
+    const longLived = await exchangeForLongLivedToken(creds, shortLived.access_token);
 
     await updateSettings({
       facebook_user_token: longLived.access_token,

@@ -7,6 +7,10 @@ create extension if not exists "pgcrypto";
 -- selected Page, and generation preferences. Single-user app, so one row.
 create table if not exists app_settings (
   id smallint primary key default 1,
+  -- Meta app credentials. Kept here rather than in env vars so that installing
+  -- this app is a paste into Settings, not a redeploy. Never leaves the server.
+  facebook_app_id text,
+  facebook_app_secret text,
   -- Long-lived user token (~60 days), used only to list Pages and to mint
   -- Page tokens. Posting never uses it directly.
   facebook_user_token text,

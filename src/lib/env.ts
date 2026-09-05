@@ -35,27 +35,19 @@ export const env = {
     return required("SESSION_SECRET");
   },
 
-  // Meta (Facebook) app
-  get facebookAppId() {
-    return required("FACEBOOK_APP_ID");
+  // Meta (Facebook) app. These are optional because the credentials are
+  // normally entered in Settings and stored in the database — see
+  // lib/facebook/credentials.ts — so that installing this app does not require
+  // editing environment variables.
+  get facebookAppIdOptional() {
+    return optional("FACEBOOK_APP_ID");
   },
-  get facebookAppSecret() {
-    return required("FACEBOOK_APP_SECRET");
+  get facebookAppSecretOptional() {
+    return optional("FACEBOOK_APP_SECRET");
   },
-  get facebookRedirectUri() {
-    return required("FACEBOOK_REDIRECT_URI");
-  },
-  /**
-   * Whether real Meta credentials exist. Deployments are seeded with
-   * "not-configured" placeholders so the rest of the app can run without a
-   * Meta app; without this check the OAuth redirect would send the user to
-   * Facebook's own "invalid app id" error page.
-   */
-  get facebookConfigured() {
-    const id = optional("FACEBOOK_APP_ID");
-    const secret = optional("FACEBOOK_APP_SECRET");
-    const placeholder = (v: string) => !v || v === "not-configured";
-    return !placeholder(id) && !placeholder(secret);
+  /** Only set this to pin a redirect URI that differs from the request origin. */
+  get facebookRedirectUriOverride() {
+    return optional("FACEBOOK_REDIRECT_URI");
   },
 
   // Free-tier LLM keys. Both are optional: without either one the app falls

@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import type { FacebookCredentials } from "@/lib/facebook/credentials";
 
 /** Graph API version this app is pinned to. Meta supports each for ~2 years. */
 export const GRAPH_VERSION = "v26.0";
@@ -17,10 +17,10 @@ export const FACEBOOK_SCOPES = [
   "pages_read_engagement",
 ];
 
-export function buildAuthorizeUrl(state: string) {
+export function buildAuthorizeUrl(creds: FacebookCredentials, state: string) {
   const params = new URLSearchParams({
-    client_id: env.facebookAppId,
-    redirect_uri: env.facebookRedirectUri,
+    client_id: creds.appId,
+    redirect_uri: creds.redirectUri,
     response_type: "code",
     scope: FACEBOOK_SCOPES.join(","),
     state,
@@ -47,11 +47,14 @@ async function graphGet(path: string, params: Record<string, string>) {
 }
 
 /** Short-lived user token (about 1 hour). */
-export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(
+  creds: FacebookCredentials,
+  code: string
+): Promise<TokenResponse> {
   return graphGet("/oauth/access_token", {
-    client_id: env.facebookAppId,
-    client_secret: env.facebookAppSecret,
-    redirect_uri: env.facebookRedirectUri,
+    client_id: creds.appId,
+    client_secret: creds.appSecret,
+    redirect_uri: creds.redirectUri,
     code,
   });
 }
@@ -61,11 +64,14 @@ export async function exchangeCodeForToken(code: string): Promise<TokenResponse>
  * beyond convenience: Page tokens minted from a long-lived user token never
  * expire, which is what lets the autopilot keep posting unattended.
  */
-export async function exchangeForLongLivedToken(shortLivedToken: string): Promise<TokenResponse> {
+export async function exchangeForLongLivedToken(
+  creds: FacebookCredentials,
+  shortLivedToken: string
+): Promise<TokenResponse> {
   return graphGet("/oauth/access_token", {
     grant_type: "fb_exchange_token",
-    client_id: env.facebookAppId,
-    client_secret: env.facebookAppSecret,
+    client_id: creds.appId,
+    client_secret: creds.appSecret,
     fb_exchange_token: shortLivedToken,
   });
 }
