@@ -15,9 +15,17 @@ export function resolveImageSource(pref: ImageSourcePref): ImageSource {
   return pref;
 }
 
+/**
+ * Topics phrased as listicles ("easy weeknight dinner ideas") make the model
+ * return a grid of thumbnails, which reads as a stock collage in the feed.
+ * Steering it toward one photographed subject fixes that.
+ */
+const PHOTO_STYLE =
+  "single subject, professional photograph, natural light, shallow depth of field, high detail, no text, no watermark, no collage, no grid";
+
 async function fetchAiImageBytes(prompt: string): Promise<Blob> {
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    prompt
+    `${prompt}, ${PHOTO_STYLE}`
   )}?width=${WIDTH}&height=${HEIGHT}&nologo=true&seed=${Math.floor(Math.random() * 1_000_000)}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
