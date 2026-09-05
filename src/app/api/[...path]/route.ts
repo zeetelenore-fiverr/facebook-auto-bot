@@ -85,6 +85,7 @@ export async function GET(req: Request, ctx: Ctx) {
     if (route === "pinterest/oauth/start") {
       if (!env.pinterestConfigured) {
         return redirectToSettings(
+          url.origin,
           "error",
           "This deployment has no Pinterest app credentials yet. Add PINTEREST_APP_ID and PINTEREST_APP_SECRET, then try connecting again."
         );
@@ -350,8 +351,14 @@ async function getBoards(refresh: boolean) {
   }
 }
 
-function redirectToSettings(status: "connected" | "error", message?: string) {
-  const target = new URL("/dashboard/settings", env.siteUrl);
+/**
+ * Send the browser back to Settings on the SAME origin it arrived from. The
+ * project answers on more than one Vercel alias, and the session cookie is
+ * scoped to whichever one the user is actually on, so redirecting to a
+ * configured canonical URL would silently drop their login.
+ */
+function redirectToSettings(origin: string, status: "connected" | "error", message?: string) {
+  const target = new URL("/dashboard/settings", origin || env.siteUrl);
   target.searchParams.set("pinterest", status);
   if (message) target.searchParams.set("message", message);
   return NextResponse.redirect(target);
@@ -367,7 +374,11 @@ async function oauthCallback(req: Request, url: URL) {
     ?.split("=")[1];
 
   if (!code || !state || !cookieState || state !== cookieState) {
-    return redirectToSettings("error", "Login was cancelled or the request expired. Please try again.");
+    return redirectToSettings(
+      url.origin,
+      "error",
+      "Login was cancelled or the request expired. Please try again."
+    );
   }
 
   try {
@@ -384,11 +395,15 @@ async function oauthCallback(req: Request, url: URL) {
       await updateSettings({ pinterest_username: account.username });
     } catch {}
 
-    const res = redirectToSettings("connected");
+    const res = redirectToSettings(url.origin, "connected");
     res.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
     return res;
   } catch (err) {
-    return redirectToSettings("error", err instanceof Error ? err.message : "Connection failed.");
+    return redirectToSettings(
+      url.origin,
+      "error",
+      err instanceof Error ? err.message : "Connection failed."
+    );
   }
 }
 
