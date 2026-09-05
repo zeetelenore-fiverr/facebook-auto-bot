@@ -77,7 +77,19 @@ export const env = {
     return optional("CRON_SECRET");
   },
 
+  /**
+   * Origin this deployment is reachable at, used to build redirects back into
+   * the dashboard. Vercel injects VERCEL_PROJECT_PRODUCTION_URL on every
+   * deployment, so a fresh copy of this app redirects correctly without anyone
+   * having to set NEXT_PUBLIC_SITE_URL by hand.
+   */
   get siteUrl() {
-    return optional("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
+    const explicit = optional("NEXT_PUBLIC_SITE_URL");
+    if (explicit) return explicit;
+
+    const vercelHost = optional("VERCEL_PROJECT_PRODUCTION_URL") || optional("VERCEL_URL");
+    if (vercelHost) return `https://${vercelHost}`;
+
+    return "http://localhost:3000";
   },
 };
