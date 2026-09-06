@@ -82,29 +82,29 @@ There is no App Review, no demo video, and no business verification.
 
    Select only that one use case. You can add others later if you ever need them.
 
-4. **Business portfolio.** The app creation flow asks you to connect one. A
-   business portfolio is just Meta's container for business assets — Pages, ad
-   accounts, apps. It is free, and **you do not need a registered company**: your
-   own name works.
+4. **Business portfolio — you can skip this.** The flow asks you to connect one,
+   and offers **"I don't want to connect a business portfolio yet"**. Take it.
 
-   If the dropdown is empty, create one:
+   Meta only requires a portfolio when your app accesses *data you don't own or
+   manage*. Posting to your own Page is not that, and a portfolio can be connected
+   at any time later if you ever need one.
 
-   - Click **Create a business portfolio** in that step if the option is offered,
-     or open [business.facebook.com](https://business.facebook.com) in a new tab,
-     click the dropdown at the top of the left menu, and choose
-     **Create a business portfolio** at the bottom.
-   - Fill in three things: a **business name** (your own name is fine), **your
-     name**, and a **business email** you can open right now.
+   If you do want or need one — for instance if the **Configurations** screen in
+   step 6 refuses to create a login configuration without it — it is free, takes
+   two minutes, and **does not require a registered company**:
+
+   - Open [business.facebook.com](https://business.facebook.com), click the
+     dropdown at the top of the left menu, and choose **Create a business
+     portfolio** at the bottom.
+   - Fill in a **business name** (your own name is fine), **your name**, and a
+     **business email** you can open right now.
    - Confirm the email Meta sends. The portfolio exists immediately.
-   - If it offers to add Pages or Instagram accounts, you can **Skip** — this app
+   - If it offers to add Pages or Instagram accounts, click **Skip** — this app
      asks for Page access later through the login flow.
 
-   Then go back to the app creation tab and select the new portfolio.
-
-   > **You do not need Business Verification.** Meta will offer it, and it asks for
+   > **You never need Business Verification.** Meta will offer it, and it asks for
    > a tax ID and legal documents. That is for Advanced Access — serving other
-   > people's accounts. Posting to your own Page never triggers it. Ignore the
-   > prompt.
+   > people's accounts. Posting to your own Page never triggers it.
 
 5. **Add the posting permissions.** The use case gives you `public_profile`,
    `pages_show_list` and `business_management` by default. Open the use case's
@@ -235,6 +235,13 @@ simply does nothing outside your posting hours or once the daily quota is met.
 
 **"Add your Meta App ID and App Secret in Settings first"**
 The credentials are not saved yet, or one of them is blank. Re-paste both.
+
+**Do I need a business portfolio?**
+No, for this app. Meta requires one only when your app accesses data you do not
+own or manage — posting to your own Page is not that. Skip it during app creation
+and connect one later if you ever need to. The one place it can bite is the
+Facebook Login for Business **Configurations** screen; if that refuses to save
+without a portfolio, create one (step 3.4) and come back.
 
 **Meta asks me to verify my business**
 You can ignore it. Business Verification is required for Advanced Access, which
