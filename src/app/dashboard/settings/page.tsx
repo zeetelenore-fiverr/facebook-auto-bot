@@ -36,6 +36,7 @@ interface SettingsState {
   /** False when the deployment has no real Meta app credentials. */
   facebook_configured?: boolean;
   facebook_app_id: string | null;
+  facebook_config_id: string | null;
   /** The secret itself never reaches the browser — only whether one is stored. */
   facebook_app_secret_set?: boolean;
   facebook_user_name: string | null;
@@ -66,6 +67,7 @@ function SettingsForm() {
 
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
+  const [configId, setConfigId] = useState("");
   const [savingCreds, setSavingCreds] = useState(false);
   const [credsError, setCredsError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -87,6 +89,7 @@ function SettingsForm() {
         if (!r.ok) throw new Error(data.error ?? "Failed to load settings.");
         setSettings(data);
         setAppId(data.facebook_app_id ?? "");
+        setConfigId(data.facebook_config_id ?? "");
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Failed to load settings."));
   }, []);
@@ -112,6 +115,7 @@ function SettingsForm() {
         body: JSON.stringify({
           appId: appId.trim(),
           appSecret: appSecret.trim() || undefined,
+          configId: configId.trim(),
         }),
       });
       const data = await res.json();
@@ -120,7 +124,13 @@ function SettingsForm() {
       setAppSecret("");
       setSettings((s) =>
         s
-          ? { ...s, facebook_app_id: appId.trim(), facebook_app_secret_set: true, facebook_configured: true }
+          ? {
+              ...s,
+              facebook_app_id: appId.trim(),
+              facebook_config_id: configId.trim() || null,
+              facebook_app_secret_set: true,
+              facebook_configured: true,
+            }
           : s
       );
     } catch (err) {
@@ -287,7 +297,25 @@ function SettingsForm() {
 
             <div className="mt-3">
               <label className="text-xs font-semibold text-muted-foreground">
-                Redirect URI — paste this into Facebook Login &gt; Settings &gt; Valid OAuth Redirect URIs
+                Login configuration ID
+              </label>
+              <input
+                value={configId}
+                onChange={(e) => setConfigId(e.target.value)}
+                placeholder="required if your app uses Facebook Login for Business"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Apps created with the &quot;Manage everything on your Page&quot; use case use
+                Facebook Login for Business, where this replaces the permission list.
+                Find it under <strong>Facebook Login for Business → Configurations</strong>.
+                Leave blank for classic Facebook Login.
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Redirect URI — paste this into your Meta app&apos;s login settings, under Valid OAuth Redirect URIs
               </label>
               <div className="mt-1 flex gap-2">
                 <input

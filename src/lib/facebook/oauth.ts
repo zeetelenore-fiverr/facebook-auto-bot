@@ -17,14 +17,30 @@ export const FACEBOOK_SCOPES = [
   "pages_read_engagement",
 ];
 
+/**
+ * Apps created with the "Manage everything on your Page" use case get Facebook
+ * Login for Business, where `config_id` replaces `scope`: the permissions come
+ * from a saved login configuration rather than the URL. Apps using classic
+ * Facebook Login still take scopes. Both are supported, chosen by whether a
+ * configuration id has been provided.
+ */
 export function buildAuthorizeUrl(creds: FacebookCredentials, state: string) {
   const params = new URLSearchParams({
     client_id: creds.appId,
     redirect_uri: creds.redirectUri,
     response_type: "code",
-    scope: FACEBOOK_SCOPES.join(","),
     state,
   });
+
+  if (creds.configId) {
+    params.set("config_id", creds.configId);
+    // Login for Business defaults to a token type the configuration decides;
+    // this keeps the code-grant flow the callback is written for.
+    params.set("override_default_response_type", "true");
+  } else {
+    params.set("scope", FACEBOOK_SCOPES.join(","));
+  }
+
   return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
 }
 

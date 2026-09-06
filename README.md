@@ -53,10 +53,13 @@ Project URL and the `service_role` key.
 Everything else is optional. See [`.env.example`](.env.example).
 
 **3. Meta app** — create one at
-[developers.facebook.com/apps](https://developers.facebook.com/apps) (type: Business),
-then open your deployment, sign in, and go to **Settings → Meta app**. Paste the App ID
-and App Secret there — no redeploy needed — and copy the redirect URI shown on that
-screen into your Meta app under **Facebook Login → Settings → Valid OAuth Redirect URIs**.
+[developers.facebook.com/apps](https://developers.facebook.com/apps) with the
+**"Manage everything on your Page"** use case (*not* the Facebook Login one — Meta
+treats them as incompatible). Add `pages_manage_posts` and `pages_read_engagement`,
+create a login configuration, then open your deployment and go to
+**Settings → Meta app**. Paste the App ID, App Secret and configuration ID there — no
+redeploy needed — and copy the redirect URI shown on that screen into your Meta app's
+**Valid OAuth Redirect URIs**.
 
 Then hit **Connect**, pick a Page, and you are running.
 

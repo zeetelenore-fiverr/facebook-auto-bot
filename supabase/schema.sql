@@ -11,6 +11,8 @@ create table if not exists app_settings (
   -- this app is a paste into Settings, not a redeploy. Never leaves the server.
   facebook_app_id text,
   facebook_app_secret text,
+  -- Facebook Login for Business configuration id, when the Meta app uses it.
+  facebook_config_id text,
   -- Long-lived user token (~60 days), used only to list Pages and to mint
   -- Page tokens. Posting never uses it directly.
   facebook_user_token text,

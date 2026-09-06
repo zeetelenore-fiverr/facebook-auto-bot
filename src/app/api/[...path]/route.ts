@@ -220,6 +220,8 @@ const CredentialsBody = z.object({
   // Optional so the UI can save an edited App ID without re-typing a secret it
   // never received in the first place.
   appSecret: z.string().trim().min(10).max(128).optional(),
+  // Empty string clears it, for an app that uses classic Facebook Login.
+  configId: z.string().trim().max(64).optional(),
 });
 
 export async function POST(req: Request, ctx: Ctx) {
@@ -338,12 +340,19 @@ export async function POST(req: Request, ctx: Ctx) {
       await updateSettings({
         facebook_app_id: parsed.data.appId,
         ...(parsed.data.appSecret ? { facebook_app_secret: parsed.data.appSecret } : {}),
+        ...(parsed.data.configId !== undefined
+          ? { facebook_config_id: parsed.data.configId || null }
+          : {}),
       });
       return json({ ok: true, redirectUri: `${url.origin}/api/facebook/oauth/callback` });
     }
 
     if (route === "facebook/credentials/clear") {
-      await updateSettings({ facebook_app_id: null, facebook_app_secret: null });
+      await updateSettings({
+        facebook_app_id: null,
+        facebook_app_secret: null,
+        facebook_config_id: null,
+      });
       return json({ ok: true });
     }
 

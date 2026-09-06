@@ -5,6 +5,8 @@ export interface FacebookCredentials {
   appId: string;
   appSecret: string;
   redirectUri: string;
+  /** Set when the Meta app uses Facebook Login for Business. */
+  configId: string | null;
 }
 
 const PLACEHOLDER = "not-configured";
@@ -27,11 +29,13 @@ const isBlank = (v: string | null | undefined) => !v || v === PLACEHOLDER;
 export async function getFacebookCredentials(origin: string): Promise<FacebookCredentials | null> {
   let appId = env.facebookAppIdOptional;
   let appSecret = env.facebookAppSecretOptional;
+  let configId: string | null = env.facebookConfigIdOptional || null;
 
   try {
     const settings = await getSettings();
     if (!isBlank(settings.facebook_app_id)) appId = settings.facebook_app_id!;
     if (!isBlank(settings.facebook_app_secret)) appSecret = settings.facebook_app_secret!;
+    if (!isBlank(settings.facebook_config_id)) configId = settings.facebook_config_id;
   } catch {
     // Settings unreadable (fresh install, database down) — fall back to env.
   }
@@ -41,6 +45,7 @@ export async function getFacebookCredentials(origin: string): Promise<FacebookCr
   return {
     appId,
     appSecret,
+    configId,
     redirectUri: env.facebookRedirectUriOverride || `${origin}/api/facebook/oauth/callback`,
   };
 }

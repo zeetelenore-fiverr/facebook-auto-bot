@@ -68,45 +68,86 @@ There is no App Review, no demo video, and no business verification.
 1. Go to [developers.facebook.com/apps](https://developers.facebook.com/apps) and
    click **Create app**. You may be asked to register as a developer first — it is
    free and instant.
+
 2. Enter an **app name** (anything) and your contact email.
-3. **Use case** — choose the Page-management one, usually shown as
-   **"Manage everything on your Page"**.
 
-   > Do **not** pick *"Authenticate and request data from users with Facebook
-   > Login"*. Meta treats that use case as incompatible with Page management, and
-   > you will not be able to request the posting permissions afterwards. If your
-   > dashboard shows different wording, pick **Other → Business**, then add the
-   > **Facebook Login** product manually from the Products list.
+3. **Use case — this is the step that matters.** Select:
 
-4. Connect a **Business portfolio** if prompted, or create one. This is free.
-5. Once the app exists, open **App settings → Basic** and copy:
-   - **App ID**
-   - **App Secret** (click *Show*)
-6. Leave the app in **Development** mode. That is all Standard Access needs, and
-   switching to Live would require a privacy policy you don't need yet.
+   > ### ✅ Manage everything on your Page
+
+   Do **not** select *"Authenticate and request data from users with Facebook
+   Login"*. Meta treats that use case as **incompatible** with Page management, and
+   if you pick it you will not be able to request the posting permissions
+   afterwards — you would have to start a new app.
+
+   Select only that one use case. You can add others later if you ever need them.
+
+4. Connect a **Business portfolio** when prompted, or create one. This is free and
+   takes a moment.
+
+5. **Add the posting permissions.** The use case gives you `public_profile`,
+   `pages_show_list` and `business_management` by default. Open the use case's
+   **Permissions** list and also add:
+
+   - `pages_manage_posts` — create the post
+   - `pages_read_engagement` — read the Page it posts to
+
+   These sit at Standard Access, so they work on your own Pages with no review.
+
+6. **Create a login configuration.** Apps built on this use case use *Facebook
+   Login for Business*, where a saved configuration replaces the permission list
+   in the login URL.
+
+   Go to **Facebook Login for Business → Configurations → Create configuration**:
+
+   - Give it any name
+   - **Token type:** User access token
+   - **Assets:** Pages
+   - **Permissions:** tick `pages_show_list`, `pages_manage_posts`,
+     `pages_read_engagement`
+   - Save, then copy the **Configuration ID** (a long number)
+
+7. Open **App settings → Basic** and copy the **App ID** and **App Secret**
+   (click *Show*).
+
+8. Leave the app in **Development** mode. That is all Standard Access needs;
+   switching to Live would demand a privacy policy you do not need yet.
 
 ---
 
 ## Step 4 — Connect the two
 
 1. In your deployed app, go to **Settings**.
-2. In the **Meta app** card, paste the **App ID** and **App Secret**, then click
-   **Save credentials**. No redeploy is needed.
-3. Still on that card, copy the **Redirect URI** shown (use the Copy button). It
-   looks like:
+
+2. In the **Meta app** card, fill in:
+
+   - **App ID** — from step 3.7
+   - **App Secret** — from step 3.7
+   - **Login configuration ID** — from step 3.6
+
+   Then click **Save credentials**. No redeploy is needed.
+
+   > If your Meta app uses classic Facebook Login rather than Login for Business,
+   > leave the configuration ID blank — the app will send the permission list
+   > directly instead.
+
+3. Still on that card, copy the **Redirect URI** with the Copy button. It looks
+   like:
 
    ```
    https://your-app.vercel.app/api/facebook/oauth/callback
    ```
 
-4. Back in your Meta app dashboard, open **Facebook Login → Settings** and paste
-   that URI into **Valid OAuth Redirect URIs**, then **Save changes**.
+4. Back in your Meta app, open **Facebook Login for Business → Settings**, paste
+   that URI into **Valid OAuth Redirect URIs**, click **Check URI** to validate it,
+   and **Save changes**.
 
    > It must match exactly, character for character. Copying it from the app
-   > rather than typing it is the point of that button.
+   > rather than typing it is the whole point of that button.
 
-5. Return to your app's Settings and click **Connect**. Approve the permission
-   prompt from Facebook.
+5. Return to your app's Settings and click **Connect**. Approve the prompt from
+   Facebook and choose the Page you want to grant access to.
+
 6. Go to the **Pages** screen, click **Refresh from Facebook**, and click
    **Set as default** on the Page you want to post to.
 
@@ -161,8 +202,15 @@ simply does nothing outside your posting hours or once the daily quota is met.
 The credentials are not saved yet, or one of them is blank. Re-paste both.
 
 **Facebook shows an error page instead of a permission prompt**
-The redirect URI in your Meta app does not match. Copy it again from the Settings
-screen — a trailing slash or `http` instead of `https` is enough to break it.
+Usually the redirect URI does not match. Copy it again from the Settings screen —
+a trailing slash or `http` instead of `https` is enough to break it. If the error
+mentions an invalid or missing configuration, your app uses Facebook Login for
+Business and the **Login configuration ID** is wrong or blank.
+
+**"Invalid Scopes" or the prompt asks for nothing useful**
+Your app uses Facebook Login for Business, which ignores the permission list and
+reads a saved configuration instead. Create one (step 3.6) and paste its ID into
+Settings.
 
 **The Pages screen is empty after connecting**
 Only Pages where you can create content are listed. Confirm you are an admin of

@@ -45,6 +45,9 @@ export const env = {
   get facebookAppSecretOptional() {
     return optional("FACEBOOK_APP_SECRET");
   },
+  get facebookConfigIdOptional() {
+    return optional("FACEBOOK_CONFIG_ID");
+  },
   /** Only set this to pin a redirect URI that differs from the request origin. */
   get facebookRedirectUriOverride() {
     return optional("FACEBOOK_REDIRECT_URI");

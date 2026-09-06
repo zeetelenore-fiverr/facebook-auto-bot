@@ -7,6 +7,13 @@ export interface AppSettings {
   /** Meta app credentials, normally entered in Settings rather than env vars. */
   facebook_app_id: string | null;
   facebook_app_secret: string | null;
+  /**
+   * Facebook Login for Business "login configuration" id. Apps created with the
+   * Page-management use case get Login for Business, where config_id replaces
+   * scope — the permissions come from the saved configuration instead of the
+   * URL. Null means the app uses classic Facebook Login and scopes.
+   */
+  facebook_config_id: string | null;
   /** Long-lived user token — lists Pages and mints Page tokens, never posts. */
   facebook_user_token: string | null;
   facebook_token_expires_at: string | null;
