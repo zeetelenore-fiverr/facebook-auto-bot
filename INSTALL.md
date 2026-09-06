@@ -110,7 +110,21 @@ There is no App Review, no demo video, and no business verification.
 7. Open **App settings → Basic** and copy the **App ID** and **App Secret**
    (click *Show*).
 
-8. Leave the app in **Development** mode. That is all Standard Access needs;
+8. **On the same Basic settings page, fill in App Domains.** Your app's Settings
+   screen shows the exact value to paste (the *App Domain* field). It is just the
+   hostname — no `https://`, no trailing slash:
+
+   ```
+   your-app.vercel.app
+   ```
+
+   Skip this and Facebook refuses the login with *"Can't load URL: The domain of
+   this URL isn't included in the app's domains."* Click **Save changes**.
+
+   While you are there, scroll to the bottom, click **+ Add Platform → Website**,
+   and set the Site URL to `https://your-app.vercel.app/`.
+
+9. Leave the app in **Development** mode. That is all Standard Access needs;
    switching to Live would demand a privacy policy you do not need yet.
 
 ---
@@ -200,6 +214,12 @@ simply does nothing outside your posting hours or once the daily quota is met.
 
 **"Add your Meta App ID and App Secret in Settings first"**
 The credentials are not saved yet, or one of them is blank. Re-paste both.
+
+**"Can't load URL: The domain of this URL isn't included in the app's domains"**
+**App Domains** is empty or wrong in **App settings → Basic**. Copy the *App
+Domain* value from your app's Settings screen — hostname only, no `https://` and
+no trailing slash — paste it there and save. If it still fails, add a **Website**
+platform on the same page with your site's URL.
 
 **Facebook shows an error page instead of a permission prompt**
 Usually the redirect URI does not match. Copy it again from the Settings screen —

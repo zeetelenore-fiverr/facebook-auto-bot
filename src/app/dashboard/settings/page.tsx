@@ -70,13 +70,15 @@ function SettingsForm() {
   const [configId, setConfigId] = useState("");
   const [savingCreds, setSavingCreds] = useState(false);
   const [credsError, setCredsError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  // Read from the browser rather than configured, so it always matches the
-  // hostname the user is actually on — the value Facebook will compare against.
+  const [copied, setCopied] = useState<"uri" | "domain" | null>(null);
+  // Read from the browser rather than configured, so they always match the
+  // hostname the user is actually on — the values Facebook compares against.
   const [redirectUri, setRedirectUri] = useState("");
+  const [appDomain, setAppDomain] = useState("");
 
   useEffect(() => {
     setRedirectUri(`${window.location.origin}/api/facebook/oauth/callback`);
+    setAppDomain(window.location.hostname);
   }, []);
 
   const oauthStatus = params.get("facebook");
@@ -140,11 +142,11 @@ function SettingsForm() {
     }
   }
 
-  async function copyRedirectUri() {
+  async function copyValue(value: string, which: "uri" | "domain") {
     try {
-      await navigator.clipboard.writeText(redirectUri);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(value);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       setCredsError("Copying failed — select the field and copy manually.");
     }
@@ -326,11 +328,35 @@ function SettingsForm() {
                   onFocus={(e) => e.currentTarget.select()}
                   className="w-full rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-xs text-muted-foreground outline-none"
                 />
-                <Button size="sm" variant="secondary" onClick={copyRedirectUri}>
-                  {copied ? <Check size={14} /> : <Copy size={14} />}
-                  {copied ? "Copied" : "Copy"}
+                <Button size="sm" variant="secondary" onClick={() => copyValue(redirectUri, "uri")}>
+                  {copied === "uri" ? <Check size={14} /> : <Copy size={14} />}
+                  {copied === "uri" ? "Copied" : "Copy"}
                 </Button>
               </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-muted-foreground">
+                App Domain — paste this into App settings &gt; Basic &gt; App Domains
+              </label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  readOnly
+                  value={appDomain}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-full rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-xs text-muted-foreground outline-none"
+                />
+                <Button size="sm" variant="secondary" onClick={() => copyValue(appDomain, "domain")}>
+                  {copied === "domain" ? <Check size={14} /> : <Copy size={14} />}
+                  {copied === "domain" ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Without this, Facebook refuses the login with
+                &quot;Can&apos;t load URL: the domain of this URL isn&apos;t included in the
+                app&apos;s domains&quot;. No <code className="rounded bg-surface-2 px-1 text-[11px]">https://</code>,
+                no trailing slash.
+              </p>
             </div>
 
             {credsError && <p className="mt-2 text-xs text-destructive">{credsError}</p>}
