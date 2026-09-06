@@ -20,8 +20,10 @@ set -a; source "$SECRETS_FILE"; set +a
 : "${VERCEL_TOKEN:?VERCEL_TOKEN missing in secrets file}"
 : "${ADMIN_PASSWORD:?ADMIN_PASSWORD missing in secrets file}"
 
-SCOPE="${VERCEL_SCOPE:-pkskills2}"
-PROJECT="${VERCEL_PROJECT:-pinterest-auto-bot}"
+# Both come from the secrets file or the environment; there are no defaults,
+# so a copy of this repo cannot accidentally deploy into someone else's account.
+SCOPE="${VERCEL_SCOPE:?set VERCEL_SCOPE to your Vercel team or username}"
+PROJECT="${VERCEL_PROJECT:?set VERCEL_PROJECT to the Vercel project name}"
 VC="npx -y vercel@latest"
 
 # SESSION_SECRET only needs to be stable, not memorable.
