@@ -268,7 +268,9 @@ function SettingsForm() {
               >
                 developers.facebook.com/apps
               </a>{" "}
-              (type: Business). Posting to a Page you administer needs no App Review.
+              with the <strong>&quot;Manage everything on your Page&quot;</strong> use case — not
+              the Facebook Login one, which Meta treats as incompatible with Page
+              management. Posting to a Page you administer needs no App Review.
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
