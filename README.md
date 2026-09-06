@@ -33,7 +33,9 @@ Note that Meta removed personal-profile publishing in 2018. This posts to **Page
 
 ## Deploy your own
 
-You need three free accounts: Vercel, Supabase, and a Meta developer account.
+**[Full installation guide →](INSTALL.md)** — step by step, about 20 minutes, no coding.
+
+The short version. You need three free accounts: Vercel, Supabase, and a Meta developer account.
 
 **1. Supabase** — create a project, open the SQL editor, and run
 [`supabase/schema.sql`](supabase/schema.sql). From Project Settings → API, copy the
