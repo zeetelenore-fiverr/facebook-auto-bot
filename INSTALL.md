@@ -82,8 +82,29 @@ There is no App Review, no demo video, and no business verification.
 
    Select only that one use case. You can add others later if you ever need them.
 
-4. Connect a **Business portfolio** when prompted, or create one. This is free and
-   takes a moment.
+4. **Business portfolio.** The app creation flow asks you to connect one. A
+   business portfolio is just Meta's container for business assets — Pages, ad
+   accounts, apps. It is free, and **you do not need a registered company**: your
+   own name works.
+
+   If the dropdown is empty, create one:
+
+   - Click **Create a business portfolio** in that step if the option is offered,
+     or open [business.facebook.com](https://business.facebook.com) in a new tab,
+     click the dropdown at the top of the left menu, and choose
+     **Create a business portfolio** at the bottom.
+   - Fill in three things: a **business name** (your own name is fine), **your
+     name**, and a **business email** you can open right now.
+   - Confirm the email Meta sends. The portfolio exists immediately.
+   - If it offers to add Pages or Instagram accounts, you can **Skip** — this app
+     asks for Page access later through the login flow.
+
+   Then go back to the app creation tab and select the new portfolio.
+
+   > **You do not need Business Verification.** Meta will offer it, and it asks for
+   > a tax ID and legal documents. That is for Advanced Access — serving other
+   > people's accounts. Posting to your own Page never triggers it. Ignore the
+   > prompt.
 
 5. **Add the posting permissions.** The use case gives you `public_profile`,
    `pages_show_list` and `business_management` by default. Open the use case's
@@ -214,6 +235,11 @@ simply does nothing outside your posting hours or once the daily quota is met.
 
 **"Add your Meta App ID and App Secret in Settings first"**
 The credentials are not saved yet, or one of them is blank. Re-paste both.
+
+**Meta asks me to verify my business**
+You can ignore it. Business Verification is required for Advanced Access, which
+means acting on Pages belonging to people who have no role on your app. Posting to
+your own Page uses Standard Access and never needs it.
 
 **"Can't load URL: The domain of this URL isn't included in the app's domains"**
 **App Domains** is empty or wrong in **App settings → Basic**. Copy the *App
