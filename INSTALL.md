@@ -319,15 +319,19 @@ your own Page uses Standard Access and never needs it.
 Work through these in order:
 
 1. **App Domains** must contain the hostname, in **App settings → Basic** —
-   hostname only, no `https://`, no trailing slash. Copy it from your app's
-   Settings screen. Confirm you clicked **Save changes**; the value can look
-   entered and still be unsaved.
+   **hostname only**. `https://pinterest-auto-bot.vercel.app` never matches;
+   `pinterest-auto-bot.vercel.app` does. The field accepts the scheme without
+   complaining and then silently fails every check. Copy the value from your
+   app's Settings screen instead of typing it. Confirm you clicked **Save
+   changes**; the value can look entered and still be unsaved.
 2. **A Website platform must exist** on that same page (`+ Add Platform →
    Website`) with your site's URL. App Domains alone frequently is not enough.
 3. **Check which hostname you are actually on.** If your deployment answers on
    several URLs, Facebook checks the one in your address bar when you clicked
-   Connect — not the one you configured. Either always open the same URL, or add
-   every hostname to App Domains.
+   Connect — not the one you configured. Pick one hostname and make all four
+   agree: App Domains, the Website platform's Site URL, the Valid OAuth Redirect
+   URI, and the URL you actually open. Mixing two of them is the most common way
+   this fails after everything looks configured.
 4. **Privacy policy URL must be `https://`.** An `http://` value can block the
    settings page from saving, which silently loses your other edits.
 
