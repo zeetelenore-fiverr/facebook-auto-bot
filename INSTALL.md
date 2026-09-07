@@ -300,6 +300,16 @@ without a portfolio, create one (step 3.4) and come back.
 The chip is entered, not saved. Scroll to the bottom of the page, click **Save
 changes**, then run **Check URI** again. The validator only reads the saved list.
 
+**What goes in "Authorize callback URL" on the Advanced settings page?**
+Nothing — leave it empty. That field belongs to the **"Native or desktop app?"**
+toggle above it and is only used by native and desktop login flows. A web app
+uses **Valid OAuth Redirect URIs** instead. Leave the toggle off too: turning it
+on tells Facebook your app cannot keep a secret, which breaks the server-side
+token exchange this app relies on.
+
+While you are on that page, leave **Upgrade API version** at **v26.0** — that is
+the version this app is built against.
+
 **Meta asks me to verify my business**
 You can ignore it. Business Verification is required for Advanced Access, which
 means acting on Pages belonging to people who have no role on your app. Posting to
