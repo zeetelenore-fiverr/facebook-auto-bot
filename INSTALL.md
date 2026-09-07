@@ -131,7 +131,13 @@ There is no App Review, no demo video, and no business verification.
    Login for Business*, where a saved configuration replaces the permission list
    in the login URL.
 
-   Go to **Facebook Login for Business → Configurations → Create configuration**:
+   Go to **Facebook Login for Business → Configurations** in the left menu, or:
+
+   ```
+   https://developers.facebook.com/apps/YOUR-APP-ID/fb-login/configurations/
+   ```
+
+   Then **Create configuration**:
 
    - Give it any name
    - **Token type:** User access token
@@ -194,9 +200,17 @@ There is no App Review, no demo video, and no business verification.
    https://your-app.vercel.app/api/facebook/oauth/callback
    ```
 
-4. Back in your Meta app, open **Facebook Login for Business → Settings**, paste
-   that URI into **Valid OAuth Redirect URIs**, click **Check URI** to validate it,
-   and **Save changes**.
+4. Back in your Meta app, open the login product's **Settings** screen:
+
+   ```
+   https://developers.facebook.com/apps/YOUR-APP-ID/fb-login/settings/
+   ```
+
+   In the left menu this is **Facebook Login → Settings**, or **Facebook Login for
+   Business → Settings** depending on your app — the same screen either way.
+
+   Paste the URI into **Valid OAuth Redirect URIs**, click **Check URI** to
+   validate it, and **Save changes**.
 
    > It must match exactly, character for character. Copying it from the app
    > rather than typing it is the whole point of that button.

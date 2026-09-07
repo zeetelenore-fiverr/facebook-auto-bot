@@ -389,6 +389,14 @@ function SettingsForm() {
                       href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/use_cases/`,
                     },
                     {
+                      label: "Login settings — Redirect URIs",
+                      href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/fb-login/settings/`,
+                    },
+                    {
+                      label: "Login configurations",
+                      href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/fb-login/configurations/`,
+                    },
+                    {
                       label: "App dashboard",
                       href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/`,
                     },
