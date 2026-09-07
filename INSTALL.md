@@ -222,8 +222,13 @@ There is no App Review, no demo video, and no business verification.
    In the left menu this is **Facebook Login → Settings**, or **Facebook Login for
    Business → Settings** depending on your app — the same screen either way.
 
-   Paste the URI into **Valid OAuth Redirect URIs**, click **Check URI** to
-   validate it, and **Save changes**.
+   Paste the URI into **Valid OAuth Redirect URIs**, then scroll to the bottom
+   and click **Save changes**.
+
+   > **Save before you validate.** Typing the URI turns it into a chip, but the
+   > **Check URI** validator only reads the *saved* list — so it reports
+   > *"This is an invalid redirect URI for this application"* about a URI that is
+   > sitting right there on screen. Save first, then check.
 
    > It must match exactly, character for character. Copying it from the app
    > rather than typing it is the whole point of that button.
@@ -290,6 +295,10 @@ own or manage — posting to your own Page is not that. Skip it during app creat
 and connect one later if you ever need to. The one place it can bite is the
 Facebook Login for Business **Configurations** screen; if that refuses to save
 without a portfolio, create one (step 3.4) and come back.
+
+**"This is an invalid redirect URI for this application" — but I can see it listed**
+The chip is entered, not saved. Scroll to the bottom of the page, click **Save
+changes**, then run **Check URI** again. The validator only reads the saved list.
 
 **Meta asks me to verify my business**
 You can ignore it. Business Verification is required for Advanced Access, which
