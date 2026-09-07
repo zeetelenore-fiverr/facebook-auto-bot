@@ -24,10 +24,20 @@ every Pin created with Trial access is a sandbox entity **visible only to its cr
 Real public Pins need Standard access — a review that includes a video demo of your
 OAuth flow.
 
-Meta works the other way round. Every app is automatically approved for
+Meta gets you further. Every app is automatically approved for
 [Standard Access](https://developers.facebook.com/docs/graph-api/overview/access-levels/),
-which covers acting on Pages belonging to people who have a role on the app. Posting to
-your own Page therefore needs **no App Review at all**, and the posts are real and public.
+which covers acting on Pages belonging to people who have a role on the app — so you can
+build, connect and publish to your own Page immediately, with no review.
+
+There is still a catch, and it is worth knowing before you start: while your Meta app is
+in **Development mode**, posts it creates
+[are visible only to people with a role on the app](https://developers.facebook.com/docs/development/build-and-test/app-modes).
+They are real Page posts, and they become visible to everyone the moment you switch the
+app to **Live** — including the ones published earlier — but switching to Live requires
+App Review for `pages_manage_posts`.
+
+So: everything works end to end today, privately. Public reach is one review away, and
+by the time you apply you already have the working integration reviewers ask to see.
 
 Note that Meta removed personal-profile publishing in 2018. This posts to **Pages**.
 

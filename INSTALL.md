@@ -60,10 +60,19 @@ generate topics, copy and images.
 
 ## Step 3 — Meta app
 
-This is the part people expect to be hard. It is not: posting to a Page **you
-administer** uses Standard Access, which every Meta app is
+Posting to a Page **you administer** uses Standard Access, which every Meta app is
 [approved for automatically](https://developers.facebook.com/docs/graph-api/overview/access-levels/).
-There is no App Review, no demo video, and no business verification.
+No App Review, no demo video and no business verification are needed to get the
+whole thing working.
+
+> **Read this before you start.** While your Meta app is in **Development** mode,
+> the posts it creates are
+> [visible only to people with a role on the app](https://developers.facebook.com/docs/development/build-and-test/app-modes)
+> — that means you. They are real Page posts, not drafts, and they become visible
+> to everyone the moment the app is switched to **Live**, including ones published
+> earlier. Switching to Live requires App Review for `pages_manage_posts`.
+>
+> Set everything up first and confirm it works. Step 7 covers going public.
 
 1. Go to [developers.facebook.com/apps](https://developers.facebook.com/apps) and
    click **Create app**. You may be asked to register as a developer first — it is
@@ -310,6 +319,12 @@ token exchange this app relies on.
 While you are on that page, leave **Upgrade API version** at **v26.0** — that is
 the version this app is built against.
 
+**I published a post but nobody else can see it**
+Expected, and not a bug. While the Meta app is in **Development** mode its posts
+are visible only to people with a role on the app. Switching to **Live** makes
+them public — including the ones already published — and that needs App Review
+for `pages_manage_posts`. See step 7.
+
 **Meta asks me to verify my business**
 You can ignore it. Business Verification is required for Advanced Access, which
 means acting on Pages belonging to people who have no role on your app. Posting to
@@ -362,6 +377,35 @@ telling you the truth rather than pretending.
 **Posts publish but the image is a collage of thumbnails**
 Use a more specific topic. Listicle-shaped phrasing ("10 ideas for…") pushes image
 models toward grids.
+
+---
+
+## Step 7 — Going public (App Review)
+
+Everything above works while your app is in Development mode, but the posts are
+only visible to you. To let the world see them, the app has to be switched to
+**Live**, and that needs App Review for `pages_manage_posts`.
+
+You are in a good position to apply, because reviewers want to see a working
+integration and you now have one.
+
+1. In **App settings → Basic**, make sure these are filled in and reachable:
+   - **Privacy policy URL** — must be `https://`
+   - **Terms of Service URL**
+   - **App icon** and **Category**
+2. Go to your app's **App Review → Permissions and features**, find
+   `pages_manage_posts`, and click **Request advanced access**.
+3. Meta asks how the permission is used and for a **screencast**. Record yourself:
+   signing in to your deployment, opening Settings, clicking **Connect**,
+   approving the Facebook prompt, choosing a Page, generating a post, and clicking
+   **Publish now** — then show the post on the Page. That is the whole story they
+   are checking.
+4. Submit and wait. Reviews usually take a few business days.
+5. Once approved, flip the app from **Development** to **Live** at the top of the
+   dashboard. Existing posts become publicly visible too.
+
+Until then everything still runs — the autopilot posts on schedule, the queue
+works, the history fills up. Only the audience is limited to you.
 
 ---
 
