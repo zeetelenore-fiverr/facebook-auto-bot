@@ -80,9 +80,14 @@ and takes two minutes from your Facebook account.
 
 *About 5 minutes.*
 
-1. Go to [github.com](https://github.com) and, on this repository's page, click
-   **Fork** (top right). This makes your own copy. Vercel can only deploy
-   repositories on your own account.
+1. **Get your own copy of the code.** Vercel can only deploy repositories your
+   GitHub account has access to.
+
+   - If you are reading this on **someone else's** repository, click **Fork** at
+     the top right of the GitHub page. That creates a copy under your account.
+   - If this repository is **already yours** — you created it, or it is showing
+     under your own username — there is nothing to do, and GitHub will not offer
+     you a Fork button. Skip straight to the next step.
 
 2. Go to [vercel.com](https://vercel.com) and sign in **with GitHub**.
 
@@ -465,6 +470,11 @@ Expected, and not a bug. While the Meta app is in **Development** mode its posts
 are visible only to people with a role on the app. Switching to **Live** makes
 them public — including the ones already published — and that needs App Review
 for `pages_manage_posts`. See step 7.
+
+**I cannot find the Fork button on GitHub**
+You are probably looking at a repository you already own — GitHub does not offer
+to fork a repo into the account that already holds it. Nothing to do: go to Vercel
+and import it directly.
 
 **Meta asks me to verify my business**
 You can ignore it. Business Verification is required for Advanced Access, which
