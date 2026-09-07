@@ -43,7 +43,7 @@ Note that Meta removed personal-profile publishing in 2018. This posts to **Page
 
 ## Deploy your own
 
-**[Full installation guide →](INSTALL.md)** — step by step, about 20 minutes, no coding.
+**[Full installation guide →](INSTALL.md)** — written for people who do not write code: every screen, every value, and the Meta settings that trip everyone up. About 30 minutes.
 
 The short version. You need three free accounts: Vercel, Supabase, and a Meta developer account.
 
