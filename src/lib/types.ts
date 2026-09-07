@@ -71,6 +71,12 @@ export interface GeneratedContent {
   providerError?: string;
 }
 
+/**
+ * Public URL of a published post. Facebook returns `post_id` as
+ * `<page-id>_<post-id>`, and that composite is itself addressable.
+ */
+export const facebookPostUrl = (postId: string) => `https://www.facebook.com/${postId}`;
+
 export const isFacebookConnected = (s: Pick<AppSettings, "facebook_user_token">) =>
   Boolean(s.facebook_user_token);
 

@@ -5,6 +5,7 @@ import { Rocket, Trash, PencilSimple, X, Check } from "@phosphor-icons/react/dis
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { facebookPostUrl } from "@/lib/types";
 import type { Post } from "@/lib/types";
 
 function toLocalInputValue(iso: string | null) {
@@ -21,6 +22,7 @@ export default function QueuePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTime, setDraftTime] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +51,7 @@ export default function QueuePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       if (data.post?.status === "failed") throw new Error(data.post.error_message ?? "Posting failed.");
+      if (data.post?.facebook_post_id) setPublishedUrl(facebookPostUrl(data.post.facebook_post_id));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to post.");
@@ -94,6 +97,20 @@ export default function QueuePage() {
       {error && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {publishedUrl && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-success">
+          Published to Facebook 🎉
+          <a
+            href={publishedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline underline-offset-2"
+          >
+            View post ↗
+          </a>
         </div>
       )}
 

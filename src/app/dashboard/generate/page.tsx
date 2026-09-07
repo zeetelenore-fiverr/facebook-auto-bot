@@ -11,10 +11,12 @@ import {
   X,
   WarningCircle,
   CheckCircle,
+  ArrowSquareOut,
 } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { facebookPostUrl } from "@/lib/types";
 import type { GeneratedContent, ImageSource, ImageSourcePref, PageCache } from "@/lib/types";
 
 type Step = "idle" | "generating" | "ready";
@@ -38,6 +40,7 @@ export default function GeneratePage() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [saving, setSaving] = useState<"draft" | "schedule" | "post_now" | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/trends")
@@ -68,6 +71,7 @@ export default function GeneratePage() {
     }
     setError(null);
     setSuccess(null);
+    setPublishedUrl(null);
     setStep("generating");
     setContent(null);
     setImage(null);
@@ -158,6 +162,11 @@ export default function GeneratePage() {
             ? "Post scheduled."
             : "Published to Facebook 🎉"
       );
+      setPublishedUrl(
+        action === "post_now" && data.post.facebook_post_id
+          ? facebookPostUrl(data.post.facebook_post_id)
+          : null
+      );
       setStep("idle");
       setContent(null);
       setImage(null);
@@ -224,9 +233,19 @@ export default function GeneratePage() {
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-success">
-          <CheckCircle size={18} className="mt-0.5 shrink-0" />
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-success">
+          <CheckCircle size={18} className="shrink-0" />
           {success}
+          {publishedUrl && (
+            <a
+              href={publishedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold underline underline-offset-2"
+            >
+              View post <ArrowSquareOut size={13} />
+            </a>
+          )}
         </div>
       )}
 

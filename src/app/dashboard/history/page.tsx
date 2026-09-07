@@ -5,6 +5,7 @@ import { ArrowSquareOut } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
+import { facebookPostUrl } from "@/lib/types";
 import type { Post, PostStatus } from "@/lib/types";
 
 const FILTERS: { label: string; value: PostStatus | "all" }[] = [
@@ -107,7 +108,7 @@ export default function HistoryPage() {
                     <td className="py-3 text-right">
                       {post.facebook_post_id && (
                         <a
-                          href={`https://www.facebook.com/${post.facebook_post_id}`}
+                          href={facebookPostUrl(post.facebook_post_id)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
