@@ -169,8 +169,21 @@ There is no App Review, no demo video, and no business verification.
    Skip this and Facebook refuses the login with *"Can't load URL: The domain of
    this URL isn't included in the app's domains."* Click **Save changes**.
 
-   While you are there, scroll to the bottom, click **+ Add Platform → Website**,
-   and set the Site URL to `https://your-app.vercel.app/`.
+   **Then, on the same page, scroll to the bottom and click
+   `+ Add Platform` → `Website`**, and set the Site URL to:
+
+   ```
+   https://your-app.vercel.app/
+   ```
+
+   App Domains on its own is often not enough — Meta validates it against a
+   platform, and without the Website platform you get the same "Can't load URL"
+   error even with the domain filled in. **Save changes** again.
+
+   > If your deployment answers on more than one hostname — Vercel gives most
+   > projects two — add **every** hostname you might open the app on to App
+   > Domains, and add each one's callback URL in step 4 of the next section.
+   > Facebook checks the host you actually launched the login from.
 
 9. Leave the app in **Development** mode. That is all Standard Access needs;
    switching to Live would demand a privacy policy you do not need yet.
@@ -284,10 +297,20 @@ means acting on Pages belonging to people who have no role on your app. Posting 
 your own Page uses Standard Access and never needs it.
 
 **"Can't load URL: The domain of this URL isn't included in the app's domains"**
-**App Domains** is empty or wrong in **App settings → Basic**. Copy the *App
-Domain* value from your app's Settings screen — hostname only, no `https://` and
-no trailing slash — paste it there and save. If it still fails, add a **Website**
-platform on the same page with your site's URL.
+Work through these in order:
+
+1. **App Domains** must contain the hostname, in **App settings → Basic** —
+   hostname only, no `https://`, no trailing slash. Copy it from your app's
+   Settings screen. Confirm you clicked **Save changes**; the value can look
+   entered and still be unsaved.
+2. **A Website platform must exist** on that same page (`+ Add Platform →
+   Website`) with your site's URL. App Domains alone frequently is not enough.
+3. **Check which hostname you are actually on.** If your deployment answers on
+   several URLs, Facebook checks the one in your address bar when you clicked
+   Connect — not the one you configured. Either always open the same URL, or add
+   every hostname to App Domains.
+4. **Privacy policy URL must be `https://`.** An `http://` value can block the
+   settings page from saving, which silently loses your other edits.
 
 **Facebook shows an error page instead of a permission prompt**
 Usually the redirect URI does not match. Copy it again from the Settings screen —
