@@ -57,6 +57,12 @@ and takes two minutes from your Facebook account.
    You should see **Success. No rows returned.** That is correct — it created
    empty tables.
 
+   > The last few lines also create a storage bucket called `post-images`, where
+   > every generated image is kept. If that part errors, create it by hand:
+   > **Storage** in the left sidebar → **New bucket** → name it exactly
+   > `post-images` → turn **Public bucket** on → Save. Images will not load
+   > without the public setting.
+
 5. Click the gear icon (**Project Settings**) in the left sidebar, then **API**.
    Copy two values into your notepad:
 
