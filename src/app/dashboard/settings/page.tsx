@@ -369,6 +369,43 @@ function SettingsForm() {
                 <span className="text-xs font-medium text-success">Credentials stored</span>
               )}
             </div>
+
+            {/* Once the App ID is known these can be built for this exact app,
+                which saves hunting through the Meta dashboard for the three
+                screens this setup touches. */}
+            {settings.facebook_app_id && (
+              <div className="mt-4 border-t border-border pt-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Open in your Meta app
+                </p>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+                  {[
+                    {
+                      label: "Basic settings — App Domains",
+                      href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/settings/basic/`,
+                    },
+                    {
+                      label: "Use cases — add permissions",
+                      href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/use_cases/`,
+                    },
+                    {
+                      label: "App dashboard",
+                      href: `https://developers.facebook.com/apps/${settings.facebook_app_id}/`,
+                    },
+                  ].map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      {link.label} ↗
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Card>

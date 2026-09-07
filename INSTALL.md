@@ -107,13 +107,25 @@ There is no App Review, no demo video, and no business verification.
    > people's accounts. Posting to your own Page never triggers it.
 
 5. **Add the posting permissions.** The use case gives you `public_profile`,
-   `pages_show_list` and `business_management` by default. Open the use case's
-   **Permissions** list and also add:
+   `pages_show_list` and `business_management` by default. You need two more.
+
+   Go to your app's use cases — from the left menu, or straight there:
+
+   ```
+   https://developers.facebook.com/apps/YOUR-APP-ID/use_cases/
+   ```
+
+   Open **Manage everything on your Page → Customize**, find the **Permissions**
+   list, and click **Add** on:
 
    - `pages_manage_posts` — create the post
    - `pages_read_engagement` — read the Page it posts to
 
    These sit at Standard Access, so they work on your own Pages with no review.
+
+   > Replace `YOUR-APP-ID` with the App ID from step 7. Once you have saved your
+   > credentials in the app, its Settings screen prints these links for you with
+   > the ID already filled in.
 
 6. **Create a login configuration.** Apps built on this use case use *Facebook
    Login for Business*, where a saved configuration replaces the permission list
@@ -129,11 +141,20 @@ There is no App Review, no demo video, and no business verification.
    - Save, then copy the **Configuration ID** (a long number)
 
 7. Open **App settings → Basic** and copy the **App ID** and **App Secret**
-   (click *Show*).
+   (click *Show*):
 
-8. **On the same Basic settings page, fill in App Domains.** Your app's Settings
-   screen shows the exact value to paste (the *App Domain* field). It is just the
-   hostname — no `https://`, no trailing slash:
+   ```
+   https://developers.facebook.com/apps/  →  your app  →  App settings > Basic
+   ```
+
+8. **Fill in App Domains**, on that same Basic settings page:
+
+   ```
+   https://developers.facebook.com/apps/YOUR-APP-ID/settings/basic/
+   ```
+
+   Your app's Settings screen shows the exact value to paste (the *App Domain*
+   field). It is just the hostname — no `https://`, no trailing slash:
 
    ```
    your-app.vercel.app
