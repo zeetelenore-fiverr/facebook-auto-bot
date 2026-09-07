@@ -19,7 +19,12 @@ import {
   updatePostRecord,
 } from "@/lib/db/posts";
 import { getSettings, updateSettings } from "@/lib/db/settings";
-import { fetchAccount, fetchPages, FacebookNotConnectedError } from "@/lib/facebook/client";
+import {
+  fetchAccount,
+  fetchPages,
+  missingPermissions,
+  FacebookNotConnectedError,
+} from "@/lib/facebook/client";
 import {
   buildAuthorizeUrl,
   exchangeCodeForToken,
@@ -531,6 +536,19 @@ async function oauthCallback(req: Request, url: URL) {
         ? new Date(Date.now() + longLived.expires_in * 1000).toISOString()
         : null,
     });
+
+    // Catch a half-granted connection here rather than at publish time, where
+    // Facebook reports it as a bare "(#200) Permissions error".
+    const missing = await missingPermissions(longLived.access_token);
+    if (missing.length > 0) {
+      return redirectToSettings(
+        url.origin,
+        "error",
+        `Connected, but these permissions were not granted: ${missing.join(", ")}. ` +
+          `Add them to your Meta app (use case permissions, and the Login for Business ` +
+          `configuration if you use one), then disconnect and connect again.`
+      );
+    }
 
     // Best-effort extras: the connection still counts as successful without a
     // display name, and without a Page the user simply picks one next.

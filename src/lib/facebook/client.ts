@@ -85,6 +85,35 @@ export async function fetchPages(): Promise<FacebookPage[]> {
   return pages;
 }
 
+/** Permissions this app cannot work without. */
+export const REQUIRED_PERMISSIONS = [
+  "pages_show_list",
+  "pages_manage_posts",
+  "pages_read_engagement",
+];
+
+/**
+ * Which of the required permissions the connected account actually granted.
+ *
+ * Worth checking explicitly: when the Meta app uses Login for Business the
+ * permissions come from a saved configuration, so a configuration missing
+ * `pages_manage_posts` connects perfectly and then fails at publish time with a
+ * bare "(#200) Permissions error" that names nothing.
+ */
+export async function missingPermissions(userToken: string): Promise<string[]> {
+  try {
+    const data = await graph("/me/permissions", { access_token: userToken });
+    const granted = new Set(
+      (data.data ?? [])
+        .filter((p: { status: string }) => p.status === "granted")
+        .map((p: { permission: string }) => p.permission)
+    );
+    return REQUIRED_PERMISSIONS.filter((p) => !granted.has(p));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchAccount(): Promise<{ name: string }> {
   const settings = await loadSettings();
   if (!settings.facebook_user_token) throw new FacebookNotConnectedError();

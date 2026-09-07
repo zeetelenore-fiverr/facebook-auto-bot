@@ -43,9 +43,18 @@ export async function publishPostNow(postId: string): Promise<Post> {
       error_message: null,
     });
   } catch (err) {
-    return await updatePostRecord(postId, {
-      status: "failed",
-      error_message: err instanceof Error ? err.message : "Unknown error while posting.",
-    });
+    let message = err instanceof Error ? err.message : "Unknown error while posting.";
+
+    // Facebook reports a token that lacks pages_manage_posts as a bare
+    // "(#200) Permissions error", which says nothing about what to fix.
+    if (/\(#200\)|permissions? error/i.test(message)) {
+      message =
+        "Facebook rejected this for missing permissions. The connected token needs " +
+        "pages_manage_posts. Add it to your Meta app — and to the Login for Business " +
+        "configuration if you use one — then disconnect and connect again so a new " +
+        "token is issued.";
+    }
+
+    return await updatePostRecord(postId, { status: "failed", error_message: message });
   }
 }
